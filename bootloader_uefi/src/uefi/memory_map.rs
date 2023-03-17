@@ -1,4 +1,4 @@
-use x86_64_hardware::memory::{PhysicalAddress, PAGE_SIZE};
+use x86_64_hardware::memory::{PhysicalAddress, PAGE_SIZE, paging::PageFrameAllocator};
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -135,6 +135,52 @@ impl EfiMemoryMap {
             }
         }
         return highest_address;
+    }
+
+    pub fn init_frame_allocator(&self) -> PageFrameAllocator {
+        let mut largest_free_mem_seg_size: u64 = 0;
+        let mut largest_frem_mem_seg = PhysicalAddress::new(0);
+
+        for current_descriptor in self.iter() {
+            if current_descriptor.mem_type() == DescriptorType::EfiConventionalMemory && current_descriptor.num_bytes() > largest_free_mem_seg_size {
+                largest_free_mem_seg_size = current_descriptor.num_bytes();
+                largest_frem_mem_seg = current_descriptor.phys_addr;
+            }
+        }
+
+        let memory_size_pages = self.get_usable_memory_size_pages();
+        let mut bitmap_size: u64 = memory_size_pages / 8;
+        if memory_size_pages % 8 > 0 {
+            bitmap_size += 1;
+        }
+
+        let bitmap = unsafe { bitmap::Bitmap::new_init(bitmap_size as usize, largest_frem_mem_seg.as_u64() as *mut u8, 0xFFu8) };
+        //This is safe because we've just allocated a valid bitmap
+        let mut output = unsafe { PageFrameAllocator::new_from_bitmap(&bitmap, 0, self.get_usable_memory_size_bytes(), 0) };
+
+        for current_descriptor in self.iter() {
+            if current_descriptor.mem_type() == DescriptorType::EfiConventionalMemory {
+                output.unreserve_pages(current_descriptor.phys_addr, current_descriptor.num_pages as usize);
+            }
+        }
+
+        let mut bitmap_size_in_pages = bitmap_size / PAGE_SIZE;
+
+        if bitmap_size % PAGE_SIZE > 0 {
+
+            bitmap_size_in_pages += 1;
+        }
+
+        output.lock_pages(largest_frem_mem_seg, bitmap_size_in_pages as usize);
+
+        return output;
+    }
+
+    pub fn free_pages(&mut self, allocator: &mut PageFrameAllocator) {
+        allocator.free_pages(PhysicalAddress::new(self.descriptors as u64), self.num_pages);
+        self.num_pages = 0;
+        self.map_size = 0;
+        self.descriptors = core::ptr::null_mut();
     }
 }
 

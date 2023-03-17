@@ -1,14 +1,13 @@
-use x86_64_hardware::memory::{PAGE_SIZE, PhysicalAddress};
+use x86_64_hardware::memory::{PAGE_SIZE, PhysicalAddress, VirtualAddress};
 use x86_64_hardware::memory::paging::PageFrameAllocator;
 use r_efi::efi;
-
 use crate::uefi;
 
 #[derive(Clone, Copy)]
 pub struct LoadedAsset {
-    pub physical_address: u64,
+    pub physical_address: PhysicalAddress,
     pub num_pages: usize,
-    pub virtual_address: u64,    
+    pub virtual_address: VirtualAddress,    
 }
 
 pub struct LoadedAssetList {
@@ -41,7 +40,7 @@ impl LoadedAssetList {
 
     /// Adds an asset to this list. Returns the index of the added item if successful.
     /// If the list is full it returns None
-    pub fn add_asset(&mut self, physical_address: u64, num_pages: usize, virtual_address: u64) -> Option<usize> {
+    pub fn add_asset(&mut self, physical_address: PhysicalAddress, num_pages: usize, virtual_address: VirtualAddress) -> Option<usize> {
         if self.max_items() == self.num_items {
             return None;
         }

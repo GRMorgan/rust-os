@@ -64,7 +64,7 @@ impl PageFrameAllocator {
         }
     }
 
-    fn unreserve_page(&mut self, address: PhysicalAddress) {
+    pub fn unreserve_page(&mut self, address: PhysicalAddress) {
         let page_number = address.as_usize() / PAGE_SIZE as usize;
         if !self.page_bitmap.get(page_number) {
             return;
@@ -79,14 +79,14 @@ impl PageFrameAllocator {
         }
     }
 
-    fn unreserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
+    pub fn unreserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
             self.unreserve_page(address.increment_page(i as u64));
         }
     }
 
     #[allow(dead_code)]
-    fn reserve_page(&mut self, address: PhysicalAddress) {
+    pub fn reserve_page(&mut self, address: PhysicalAddress) {
         let page_number = address.as_usize() / PAGE_SIZE as usize;
         if self.page_bitmap.get(page_number) {
             return;
@@ -99,7 +99,7 @@ impl PageFrameAllocator {
     }
 
     #[allow(dead_code)]
-    fn reserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
+    pub fn reserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
             self.reserve_page(address.increment_page(i as u64));
         }

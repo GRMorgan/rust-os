@@ -5,7 +5,7 @@ use core::fmt::Write;
 use loaded_asset_list::LoadedAssetList;
 use r_efi::efi;
 use elf;
-use x86_64_hardware::memory::{PAGE_SIZE, VirtualAddress};
+use x86_64_hardware::memory::{PAGE_SIZE, VirtualAddress, PhysicalAddress};
 
 mod uefi;
 mod unicode;
@@ -38,18 +38,19 @@ pub extern "C" fn efi_main(h: efi::Handle, st: *mut efi::SystemTable) -> efi::St
 fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi::Status> {
     let mut out = system_table.con_out();
 
-    efi_write!(out, "Hello, world!\r\n");
-
     let (kernel_asset_list, entry_point) = load_kernel(h, system_table)?;
 
-    efi_write!(out, "Kernel entry point: {:#x}\r\n", entry_point.as_u64());
-    for asset in kernel_asset_list.iter() {
-        efi_write!(out, "Kernel asset loaded. Physical Address: {:#x}, Num Pages: {}, Virtual Address: {:#x}\r\n", asset.physical_address, asset.num_pages, asset.virtual_address);
-    }
-
-    let mem_info = system_table.boot_services().get_memory_map()?;
+    let mut mem_info = system_table.boot_services().get_memory_map()?;
 
     system_table.boot_services().exit_boot_services(h, mem_info.map_key)?;
+
+    let mut allocator = mem_info.map.init_frame_allocator();
+    //We're done with the mem_map so free the pages
+    mem_info.map.free_pages(&mut allocator);
+
+    for asset in kernel_asset_list.iter() {
+        allocator.lock_pages(asset.physical_address, asset.num_pages);
+    }
 
     return Ok(());
 }
@@ -83,7 +84,7 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
                 kernel_file.set_position(phdr.p_offset);
                 let mut psize = phdr.p_filesz as usize;
                 kernel_file.read(&mut psize, kernel_mem);
-                kernel_asset_list.add_asset(kernel_mem as u64, pages, phdr.p_vaddr);
+                kernel_asset_list.add_asset(PhysicalAddress::new(kernel_mem as u64), pages, VirtualAddress::new(phdr.p_vaddr));
             },
             _ => {}
         }

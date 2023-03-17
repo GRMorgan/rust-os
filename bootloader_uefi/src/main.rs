@@ -22,7 +22,10 @@ pub extern "C" fn efi_main(h: efi::Handle, st: *mut efi::SystemTable) -> efi::St
     let system_table = unsafe { uefi::SystemTableWrapper::new(st)};
 
     match main(h, system_table) {
-        Ok(()) => { return efi::Status::SUCCESS; }
+        Ok(()) => { 
+            loop {}
+            return efi::Status::SUCCESS;
+        }
         Err(s) => { 
             let mut out = system_table.con_out();
             efi_write!(out, "Error: {:#x}\r\n", s.as_usize());
@@ -46,9 +49,7 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
 
     let mem_info = system_table.boot_services().get_memory_map()?;
 
-    for descriptor in mem_info.map.iter() {
-        efi_write!(out, "Mem Descriptor. Type {:?}, Physical Address: {:#x}, Num Pages: {}\r\n", descriptor.mem_type(), descriptor.phys_addr.as_u64(), descriptor.num_pages);
-    }
+    system_table.boot_services().exit_boot_services(h, mem_info.map_key)?;
 
     return Ok(());
 }

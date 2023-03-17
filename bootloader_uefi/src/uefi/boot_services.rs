@@ -108,6 +108,18 @@ impl BootServices {
         return Ok(output);
     }
 
+    pub fn exit_boot_services(&self, h: efi::Handle, map_key: usize) -> Result<(),efi::Status> {
+        let s = unsafe {
+            ((*self.boot_services_ptr).exit_boot_services)(h, map_key)
+        };
+
+        if s == efi::Status::SUCCESS {
+            return Ok(());
+        } else {
+            return Err(s);
+        }
+    }
+
     fn handle_protocol(&self, h: efi::Handle, guid: *mut efi::Guid) -> Result<*mut core::ffi::c_void, efi::Status> {
         let mut output: *mut core::ffi::c_void = core::ptr::null_mut::<core::ffi::c_void>();
         let s = unsafe {

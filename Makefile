@@ -1,9 +1,11 @@
 BOOTLOADER_DIR = bootloader_uefi
 ASSETS_DIR = assets
+KERNEL_DIR = kernel
 BINDIR = bin
 OSNAME = RustOs
 OSIMAGE = $(BINDIR)/$(OSNAME).img
 BOOTLOADER = $(BOOTLOADER_DIR)/target/x86_64-unknown-uefi/debug/bootloader_uefi.efi
+KERNEL = $(KERNEL_DIR)/bin/kernel.elf
 
 all: $(OSIMAGE)
 
@@ -15,13 +17,16 @@ $(OSIMAGE): modules
 	mmd -i $(OSIMAGE) ::/EFI/BOOT
 	mcopy -i $(OSIMAGE) $(BOOTLOADER) ::/EFI/BOOT
 	mcopy -i $(OSIMAGE) $(ASSETS_DIR)/startup.nsh ::
+	mcopy -i $(OSIMAGE) $(KERNEL) ::
 
 modules:
 	cd $(BOOTLOADER_DIR) && make all
+	cd $(KERNEL_DIR) && make all
 	cd $(ASSETS_DIR) && make all
 
 clean:
 	cd $(BOOTLOADER_DIR) && make clean
+	cd $(KERNEL_DIR) && make clean
 	-rm -rf $(BINDIR)
 
 clean-all: clean

@@ -1,4 +1,4 @@
 **/target
 *.fd
-/bin
+**/bin
 out.txt

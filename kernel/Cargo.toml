@@ -1,11 +1,12 @@
 [package]
-name = "bootloader_uefi"
+name = "kernel"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["staticlib"]
+
 [dependencies]
-r-efi = "4.1.0"
-elf = { path = "../elf" }
 x86_64_hardware = { path = "../x86_64_hardware" }

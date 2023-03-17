@@ -20,6 +20,12 @@ impl SystemTableWrapper {
         };
     }
 
+    pub fn boot_services(&self) -> BootServices {
+        unsafe {
+            return BootServices::new((*self.system_table_ptr).boot_services);
+        }
+    }
+
     pub fn con_out(&self) -> SimpleTextOutputProtocol {
         unsafe {
             return SimpleTextOutputProtocol::new((*self.system_table_ptr).con_out);

@@ -11,4 +11,4 @@ clean:
 	cargo clean
 
 .DEFAULT_GOAL := all
-.PHONY : clean all
+.PHONY : clean all $(BOOTLOADER)

@@ -13,17 +13,11 @@ name = "bitmap"
 version = "0.1.0"
 
 [[package]]
-name = "bootloader_uefi"
+name = "kernel"
 version = "0.1.0"
 dependencies = [
- "elf",
- "r-efi",
  "x86_64_hardware",
 ]
-
-[[package]]
-name = "elf"
-version = "0.1.0"
 
 [[package]]
 name = "lazy_static"
@@ -43,12 +37,6 @@ dependencies = [
  "autocfg",
  "scopeguard",
 ]
-
-[[package]]
-name = "r-efi"
-version = "4.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e7345c622833c6745e7b027a28aa95618813dc1f3c3de396206410267dce6f3"
 
 [[package]]
 name = "scopeguard"

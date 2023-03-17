@@ -4,10 +4,6 @@
 
 - Should setup a kernel stack
 
-## Exit boot services
-
-## Create frame allocator
-
 ## Remap paging
 
 ## Load kernel at correct offset

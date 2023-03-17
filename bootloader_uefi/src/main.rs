@@ -44,6 +44,12 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
         efi_write!(out, "Kernel asset loaded. Physical Address: {:#x}, Num Pages: {}, Virtual Address: {:#x}\r\n", asset.physical_address, asset.num_pages, asset.virtual_address);
     }
 
+    let mem_info = system_table.boot_services().get_memory_map()?;
+
+    for descriptor in mem_info.map.iter() {
+        efi_write!(out, "Mem Descriptor. Type {:?}, Physical Address: {:#x}, Num Pages: {}\r\n", descriptor.mem_type(), descriptor.phys_addr.as_u64(), descriptor.num_pages);
+    }
+
     return Ok(());
 }
 

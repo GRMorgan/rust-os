@@ -1,5 +1,6 @@
 use r_efi::efi;
 use r_efi::protocols::*;
+use x86_64_hardware::memory::PAGE_SIZE;
 
 use crate::uefi::*;
 
@@ -24,9 +25,25 @@ impl BootServices {
         }
     }
 
-    pub fn allocate_pages_raw(&self, alloc_type: r_efi::system::AllocateType, mem_type: r_efi::system::MemoryType, pages: usize, memory: *mut r_efi::base::PhysicalAddress) -> efi::Status {
+    fn allocate_pages_raw(&self, alloc_type: r_efi::system::AllocateType, mem_type: r_efi::system::MemoryType, pages: usize, memory: *mut r_efi::base::PhysicalAddress) -> efi::Status {
         unsafe {
             ((*self.boot_services_ptr).allocate_pages)(alloc_type, mem_type, pages, memory)
+        }
+    }
+
+    fn free_pages<T>(&self, mem: *mut T, num_pages: usize) -> Result<(), efi::Status> {
+        return self.free_pages_raw(mem as u64, num_pages);
+    }
+
+    fn free_pages_raw(&self, mem_addr: u64, num_pages: usize) -> Result<(), efi::Status> {
+        let s = unsafe {
+            ((*self.boot_services_ptr).free_pages)(mem_addr, num_pages)
+        };
+
+        if s != efi::Status::SUCCESS {
+            return Err(s);
+        } else {
+            return Ok(());
         }
     }
 
@@ -46,6 +63,49 @@ impl BootServices {
         let mut guid: efi::Guid = simple_file_system::PROTOCOL_GUID;
         let fs_ptr: *mut simple_file_system::Protocol = self.handle_protocol(h, &mut guid)? as *mut simple_file_system::Protocol;
         return Ok(SimpleFileSystemProtocol::new(fs_ptr));
+    }
+
+    pub fn get_memory_map(&self) -> Result<memory_map::GetMemoryMapOutput, efi::Status> {
+        let mut output: memory_map::GetMemoryMapOutput = Default::default();
+        let mut mem_ptr = core::ptr::null_mut::<core::ffi::c_void>();
+        let mut s = unsafe {
+            ((*self.boot_services_ptr).get_memory_map)(
+                &mut output.map.map_size,
+                mem_ptr as *mut efi::MemoryDescriptor,
+                &mut output.map_key,
+                &mut output.map.descriptor_size,
+                &mut output.descriptor_version
+            )
+        };
+
+        //Loop here to get correct mem map size
+        //The act of allocating can change the size of the mem map. So we need to loop
+        //until we have a memory block large enough to fit the map.
+        while s == efi::Status::BUFFER_TOO_SMALL {
+            let num_pages = (output.map.map_size + PAGE_SIZE as usize - 1) / PAGE_SIZE as usize;
+            mem_ptr = self.allocate_pages::<core::ffi::c_void>(efi::LOADER_DATA, num_pages)?;
+
+            output.map.descriptors = mem_ptr as *mut memory_map::EfiMemoryDescriptor;
+            s = unsafe {
+                ((*self.boot_services_ptr).get_memory_map)(
+                    &mut output.map.map_size,
+                    mem_ptr as *mut efi::MemoryDescriptor,
+                    &mut output.map_key,
+                    &mut output.map.descriptor_size,
+                    &mut output.descriptor_version
+                )
+            };
+            
+            if s != efi::Status::SUCCESS {
+                self.free_pages(mem_ptr, num_pages)?;
+            } else {
+                output.map.num_pages = num_pages;
+            }
+        }
+
+        output.map.descriptors = mem_ptr as *mut memory_map::EfiMemoryDescriptor;
+
+        return Ok(output);
     }
 
     fn handle_protocol(&self, h: efi::Handle, guid: *mut efi::Guid) -> Result<*mut core::ffi::c_void, efi::Status> {

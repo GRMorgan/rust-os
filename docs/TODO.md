@@ -4,8 +4,6 @@
 
 - Should setup a kernel stack
 
-## Get UEFI memory map
-
 ## Exit boot services
 
 ## Create frame allocator

@@ -1,6 +1,5 @@
 use crate::devices::ioport::Port;
 use core::fmt;
-use lazy_static::lazy_static;
 use spin::Mutex;
 
 pub struct SerialPort {
@@ -20,7 +19,7 @@ impl SerialPort {
     ///This is unsafe as you can create an instance that doesn't actually point
     ///to a serial port. If a correct base port is specified the rest of the
     ///type is safe.
-    pub unsafe fn new(base_port: u16) -> SerialPort {
+    pub const unsafe fn new(base_port: u16) -> SerialPort {
         return SerialPort {
             data_reg : Port::new(base_port),
             inter_reg : Port::new(base_port + 1),
@@ -97,9 +96,7 @@ pub fn com1_port() -> SerialPort {
     }
 }
 
-lazy_static! {
-    pub static ref COM1: Mutex<SerialPort> = Mutex::new(com1_port());
-}
+pub static COM1: Mutex<SerialPort> = Mutex::new(unsafe {SerialPort::new(COM1_BASE) });
 
 #[macro_export]
 macro_rules! com1_print {

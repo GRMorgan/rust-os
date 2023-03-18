@@ -2,3 +2,4 @@
 *.fd
 **/bin
 out.txt
+*.o

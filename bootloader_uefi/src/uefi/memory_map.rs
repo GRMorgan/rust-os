@@ -38,7 +38,7 @@ impl EfiMemoryDescriptor {
 
     ///Returns the base address of the page following this range
     pub fn max_physical_address(&self) -> PhysicalAddress {
-        return self.phys_addr.increment_page(self.num_pages);
+        return self.phys_addr.increment_page_4kb(self.num_pages);
     }
 
     //True if the memory is potentially usable (i.e. isn't reserved, IO mapped or similar)

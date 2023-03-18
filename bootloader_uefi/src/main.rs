@@ -5,7 +5,7 @@ use core::fmt::Write;
 use loaded_asset_list::LoadedAssetList;
 use r_efi::efi;
 use elf;
-use x86_64_hardware::memory::{PAGE_SIZE, VirtualAddress, PhysicalAddress};
+use x86_64_hardware::{memory::{PAGE_SIZE, VirtualAddress, PhysicalAddress, paging::PageTableManager}, com1_println};
 
 mod uefi;
 mod unicode;
@@ -45,12 +45,27 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     system_table.boot_services().exit_boot_services(h, mem_info.map_key)?;
 
     let mut allocator = mem_info.map.init_frame_allocator();
+    let max_physical_address = mem_info.map.max_physical_address();
     //We're done with the mem_map so free the pages
     mem_info.map.free_pages(&mut allocator);
 
     for asset in kernel_asset_list.iter() {
         allocator.lock_pages(asset.physical_address, asset.num_pages);
     }
+
+    let page_table_manager = PageTableManager::new_from_allocator(&mut allocator, 0);
+
+    //Identity map the entire memory range
+    let num_mem_pages = max_physical_address.as_u64() / PAGE_SIZE;
+    page_table_manager.map_memory_pages(VirtualAddress::new(0), PhysicalAddress::new(0), num_mem_pages, &mut allocator);
+
+    //Map the kernel into the new page table
+    for asset in kernel_asset_list.iter() {
+        page_table_manager.map_memory_pages(asset.virtual_address, asset.physical_address, asset.num_pages as u64, &mut allocator);
+    }
+
+    unsafe { page_table_manager.activate_page_table(); }
+    com1_println!("New page table activated");
 
     return Ok(());
 }
@@ -83,7 +98,7 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
 
                 kernel_file.set_position(phdr.p_offset);
                 let mut psize = phdr.p_filesz as usize;
-                kernel_file.read(&mut psize, kernel_mem);
+                kernel_file.read(&mut psize, kernel_mem)?;
                 kernel_asset_list.add_asset(PhysicalAddress::new(kernel_mem as u64), pages, VirtualAddress::new(phdr.p_vaddr));
             },
             _ => {}

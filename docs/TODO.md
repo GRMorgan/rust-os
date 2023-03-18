@@ -4,10 +4,6 @@
 
 - Should setup a kernel stack
 
-## Remap paging
-
-## Load kernel at correct offset
-
 ## Jump to kernel
 
 # GDT setup

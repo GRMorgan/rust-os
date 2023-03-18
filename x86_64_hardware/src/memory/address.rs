@@ -22,8 +22,12 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub const fn increment_page(self, num_pages: u64) -> PhysicalAddress {
+    pub const fn increment_page_4kb(self, num_pages: u64) -> PhysicalAddress {
         return PhysicalAddress(self.as_u64() + (num_pages * PAGE_SIZE));
+    }
+
+    pub fn get_virtual_address_at_offset(&self, offset: u64) -> VirtualAddress {
+        return VirtualAddress::new(self.0 + offset);
     }
 }
 
@@ -82,6 +86,11 @@ impl VirtualAddress {
     #[inline]
     pub const fn as_usize(self) -> usize {
         self.0 as usize
+    }
+
+    #[inline]
+    pub const fn increment_page_4kb(self, num_pages: u64) -> VirtualAddress {
+        return VirtualAddress(self.as_u64() + (num_pages * PAGE_SIZE));
     }
 
     #[inline]

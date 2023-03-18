@@ -42,7 +42,7 @@ impl PageFrameAllocator {
 
     pub fn free_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
-            self.free_page(address.increment_page(i as u64));
+            self.free_page(address.increment_page_4kb(i as u64));
         }
     }
 
@@ -60,7 +60,7 @@ impl PageFrameAllocator {
 
     pub fn lock_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
-            self.lock_page(address.increment_page(i as u64));
+            self.lock_page(address.increment_page_4kb(i as u64));
         }
     }
 
@@ -81,7 +81,7 @@ impl PageFrameAllocator {
 
     pub fn unreserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
-            self.unreserve_page(address.increment_page(i as u64));
+            self.unreserve_page(address.increment_page_4kb(i as u64));
         }
     }
 
@@ -101,7 +101,7 @@ impl PageFrameAllocator {
     #[allow(dead_code)]
     pub fn reserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
         for i in 0..page_count {
-            self.reserve_page(address.increment_page(i as u64));
+            self.reserve_page(address.increment_page_4kb(i as u64));
         }
     }
 

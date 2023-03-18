@@ -1,6 +1,7 @@
 BOOTLOADER_DIR = bootloader_uefi
 ASSETS_DIR = assets
 KERNEL_DIR = kernel
+X86_64_HARDWARE_DIR = x86_64_hardware
 BINDIR = bin
 OSNAME = RustOs
 OSIMAGE = $(BINDIR)/$(OSNAME).img
@@ -27,6 +28,7 @@ modules:
 clean:
 	cd $(BOOTLOADER_DIR) && make clean
 	cd $(KERNEL_DIR) && make clean
+	cd $(X86_64_HARDWARE_DIR) && make clean
 	-rm -rf $(BINDIR)
 
 clean-all: clean

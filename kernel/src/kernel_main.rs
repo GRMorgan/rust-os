@@ -8,6 +8,6 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn _start() {
-    com1_println!("Hello, world!");
+    com1_println!("Hello from kernel!");
     loop { }
 }

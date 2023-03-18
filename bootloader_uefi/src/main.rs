@@ -67,6 +67,9 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     unsafe { page_table_manager.activate_page_table(); }
     com1_println!("New page table activated");
 
+    let kernel_start: unsafe extern "sysv64" fn() = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };
+    unsafe { (kernel_start)() };
+
     return Ok(());
 }
 

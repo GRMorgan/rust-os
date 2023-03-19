@@ -6,8 +6,9 @@ use bootinfo::BootInfo;
 use loaded_asset_list::LoadedAssetList;
 use r_efi::efi;
 use elf;
-use x86_64_hardware::{memory::{PAGE_SIZE, VirtualAddress, PhysicalAddress, paging::PageTableManager}, com1_println};
-
+use x86_64_hardware::memory::{PAGE_SIZE, VirtualAddress, PhysicalAddress, MAX_VIRTUAL_ADDRESS};
+use x86_64_hardware::memory:: paging::{PageTableManager, PageFrameAllocator, MAX_MEM_SIZE, MEM_1G};
+use x86_64_hardware::com1_println;
 mod uefi;
 mod unicode;
 mod loaded_asset_list;
@@ -57,11 +58,22 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
         allocator.lock_pages(asset.physical_address, asset.num_pages);
     }
 
-    let page_table_manager = PageTableManager::new_from_allocator(&mut allocator, 0);
+    let (mut page_table_manager, offset) = match init_page_table_manager(&mut allocator, max_physical_address) {
+        Some(ptm) => ptm,
+        None => {
+            com1_println!("Memsize too large");
+            return Err(efi::Status::ABORTED);
+        }
+    };
 
-    //Identity map the entire memory range
-    let num_mem_pages = max_physical_address.as_u64() / PAGE_SIZE;
-    page_table_manager.map_memory_pages(VirtualAddress::new(0), PhysicalAddress::new(0), num_mem_pages, &mut allocator);
+    unsafe { (*bootinfo).page_table_memory_offset = offset; }
+
+    //activate the new page table before turning on offset mapping
+    unsafe { 
+        page_table_manager.activate_page_table();
+        page_table_manager.set_offset(offset);
+        
+    }
 
     //Map the kernel into the new page table
     for asset in kernel_asset_list.iter() {
@@ -79,11 +91,9 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     unsafe { (*bootinfo).next_available_kernel_page = bootinfo_virtual_address.increment_page_4kb(bootinfo_num_pages as u64); }
 
     unsafe { page_table_manager.activate_page_table(); }
-    com1_println!("New page table activated");
 
     //Update boot info pointer to point to the kernel mapped address
     bootinfo = unsafe { bootinfo_virtual_address.get_mut_ptr::<BootInfo>() };
-    com1_println!("Next kernel virtual address: {:#x}", unsafe { (*bootinfo).next_available_kernel_page.as_u64() } );
 
     let kernel_start: unsafe extern "sysv64" fn(*mut BootInfo) = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };
     unsafe { (kernel_start)(bootinfo) };
@@ -127,6 +137,26 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
     }
 
     return Ok((kernel_asset_list, VirtualAddress::new(elf_64.e_entry)));
+}
+
+fn init_page_table_manager(mut allocator: &mut PageFrameAllocator, max_physical_address: PhysicalAddress) -> Option<(PageTableManager, u64)> {
+    if max_physical_address.as_u64() > MAX_MEM_SIZE {
+        return None;
+    }
+    let page_table_manager = PageTableManager::new_from_allocator(allocator, 0);
+
+    //Identity map the entire memory range
+    let num_mem_pages = max_physical_address.as_u64() / PAGE_SIZE;
+    page_table_manager.map_memory_pages(VirtualAddress::new(0), PhysicalAddress::new(0), num_mem_pages, allocator);
+
+    //The size of the address space set aside in GB
+    let num_gb = (max_physical_address.as_u64() + MEM_1G - 1) / MEM_1G;
+    // The correct calcuation is from the address after the max so add 1 at the end
+    let offset = (MAX_VIRTUAL_ADDRESS - num_gb * MEM_1G) + 1;
+
+    page_table_manager.map_memory_pages(VirtualAddress::new(offset), PhysicalAddress::new(0), num_mem_pages, allocator);
+
+    return Some((page_table_manager, offset));
 }
 
 fn validate_elf(header: &elf::ElfHeaderCommon, out: &mut uefi::SimpleTextOutputProtocol) -> Result<(),efi::Status> {

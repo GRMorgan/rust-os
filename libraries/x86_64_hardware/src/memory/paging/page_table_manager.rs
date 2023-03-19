@@ -1,33 +1,41 @@
 use crate::memory::paging::*;
 use crate::memory::*;
 
-//Note this only supports identity mapping currently
+pub const MEM_1G: u64 = 1024 * 1024 * 1024;
+
+//Limit offset mapping to a memory space of 512GB.
+//We could support more than this but we need a limit somewhere and this means
+//the offset mapping can use exactly 1 P4 entry at most
+pub const MAX_MEM_SIZE: u64 = 512 * MEM_1G;
+
 pub struct PageTableManager {
     p4: PhysicalAddress,
+    offset: u64,
 }
 
 impl PageTableManager {
-    pub fn new_from_allocator(allocator: &mut impl FrameAllocator, mem_offset: u64) -> PageTableManager {
+    pub fn new_from_allocator(allocator: &mut impl FrameAllocator, offset: u64) -> PageTableManager {
         let p4_paddr = allocator.request_page();
-        let p4_vaddr = p4_paddr.get_virtual_address_at_offset(mem_offset);
+        let p4_vaddr = p4_paddr.get_virtual_address_at_offset(offset);
         let p4_table = unsafe{ p4_vaddr.get_mut_ptr::<PageTable>() };
         unsafe { (*p4_table).make_unused(); }
-        return PageTableManager::new(p4_paddr);
+        return PageTableManager::new(p4_paddr, offset);
     }
 
-    pub fn new_from_cr3() -> PageTableManager {
+    pub fn new_from_cr3(offset: u64) -> PageTableManager {
         let p4_addr: u64;
 
         unsafe {
             core::arch::asm!("mov {}, cr3", out(reg) p4_addr, options(nomem, nostack, preserves_flags));
         }
 
-        return Self::new(PhysicalAddress::new(p4_addr));
+        return Self::new(PhysicalAddress::new(p4_addr), offset);
     }
 
-    pub fn new(p4: PhysicalAddress) -> PageTableManager {
+    pub fn new(p4: PhysicalAddress, offset: u64) -> PageTableManager {
         return PageTableManager {
             p4: p4,
+            offset: offset,
         }
     }
 
@@ -38,9 +46,20 @@ impl PageTableManager {
         unsafe { return &(*p4_ptr); }
     }
 
-    //Just identity map for now but this will be used for offset mapping
+    /// Sets the offset this PageTableManager uses to handle page virtual address
+    /// lookup
+    /// 
+    /// ## Safety
+    /// 
+    /// This is unsafe because we cannot guarantee that the offset will be correct.
+    /// The caller must be sure the current live page table has the systems memory
+    /// offset mapped at the given offset
+    pub unsafe fn set_offset(&mut self, offset: u64) {
+        self.offset = offset;
+    }
+
     fn translate_address(&self, physical_addr: PhysicalAddress) -> VirtualAddress {
-        return VirtualAddress::new(physical_addr.as_u64());
+        return physical_addr.get_virtual_address_at_offset(self.offset);
     }
 
     pub unsafe fn activate_page_table(&self) {

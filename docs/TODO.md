@@ -1,6 +1,3 @@
-# Setup Offet Mapping
-- Add the offset to the bootinfo
-
 # Clear Page Table of initial identity mapping
 
 # Pass through the memory bitmap

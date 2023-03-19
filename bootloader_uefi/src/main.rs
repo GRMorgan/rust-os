@@ -41,7 +41,7 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     let mut out = system_table.con_out();
     let bootinfo_num_pages = (core::mem::size_of::<BootInfo>() + PAGE_SIZE as usize - 1) / PAGE_SIZE as usize;
     let mut bootinfo = system_table.boot_services().allocate_pages::<BootInfo>(r_efi::system::LOADER_DATA, bootinfo_num_pages)?;
-    unsafe { (*bootinfo).next_available_kernel_page = VirtualAddress::new(0); }
+    unsafe { (*bootinfo) = BootInfo::default(); }
 
     let (kernel_asset_list, entry_point) = load_kernel(h, system_table)?;
 

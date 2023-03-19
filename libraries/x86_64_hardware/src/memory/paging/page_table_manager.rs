@@ -195,4 +195,64 @@ impl PageTableManager {
 
         return Some(page_table_entry.address());
     }
+
+    pub fn unmap_p4_index(&self, p4_index: usize, allocator: &mut impl FrameAllocator) {
+        //We could error here but honestly doing nothing is just fine. Technically the index is completely unmapped
+        if p4_index > PAGE_TABLE_MAX_INDEX {
+            return;
+        }
+        
+        let p4_ptr = unsafe { self.translate_address(self.p4).get_mut_ptr::<PageTable>() };
+
+        let mut p4_entry = unsafe { (*p4_ptr).get_entry(p4_index) };
+
+        if p4_entry.present() {
+            let p3_phys_address = p4_entry.address();
+            let p3_ptr: *mut PageTable = unsafe { self.translate_address(p3_phys_address).get_mut_ptr::<PageTable>() };
+            self.unmap_p3(p3_ptr, allocator);
+            p4_entry.make_unused();
+            unsafe { (*p4_ptr).set_entry(p4_index, p4_entry); }
+            allocator.free_page(p3_phys_address);
+        }
+    }
+
+    fn unmap_p3(&self, p3_ptr: *mut PageTable, allocator: &mut impl FrameAllocator) {
+        for index in 0..PAGE_TABLE_MAX_INDEX {
+            let mut p3_entry = unsafe { (*p3_ptr).get_entry(index) };
+
+            if p3_entry.present() {
+                if p3_entry.page_size() {
+                    p3_entry.make_unused();
+                    unsafe { (*p3_ptr).set_entry(index, p3_entry); }
+                } else {
+                    let p2_phys_address = p3_entry.address();
+                    let p2_ptr: *mut PageTable = unsafe { self.translate_address(p2_phys_address).get_mut_ptr::<PageTable>() };
+                    self.unmap_p2(p2_ptr, allocator);
+                    p3_entry.make_unused();
+                    unsafe { (*p3_ptr).set_entry(index, p3_entry); }
+                    allocator.free_page(p2_phys_address);
+                }
+            }
+        }
+    }
+
+    fn unmap_p2(&self, p2_ptr: *mut PageTable, allocator: &mut impl FrameAllocator) {
+        for index in 0..PAGE_TABLE_MAX_INDEX {
+            let mut p2_entry = unsafe { (*p2_ptr).get_entry(index) };
+
+            if p2_entry.present() {
+                if p2_entry.page_size() {
+                    p2_entry.make_unused();
+                    unsafe { (*p2_ptr).set_entry(index, p2_entry); }
+                } else {
+                    let p1_phys_address = p2_entry.address();
+                    let p1_ptr: *mut PageTable = unsafe { self.translate_address(p1_phys_address).get_mut_ptr::<PageTable>() };
+                    unsafe { (*p1_ptr).make_unused(); }
+                    p2_entry.make_unused();
+                    unsafe { (*p2_ptr).set_entry(index, p2_entry); }
+                    allocator.free_page(p1_phys_address);
+                }
+            }
+        }
+    }
 }

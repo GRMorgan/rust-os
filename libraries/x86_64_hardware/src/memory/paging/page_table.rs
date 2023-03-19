@@ -1,5 +1,7 @@
 use crate::memory::*;
 
+pub const PAGE_TABLE_MAX_INDEX: usize = 511;
+
 const PRESENT_FLAG: u64 = 1 << 0;
 const READ_WRITE_FLAG: u64 = 1 << 1;
 const _USER_SUPERVISOR_FLAG: u64 = 1 << 2;
@@ -102,6 +104,20 @@ impl PageTable {
 
     pub fn copy_from(&mut self, other_page_table: &PageTable) {
         self.table = other_page_table.table;
+    }
+
+    pub fn get_entry(&self, index: usize) -> PageTableEntry {
+        return self.table[index];
+    }
+
+    /// Set a page table entry
+    /// 
+    /// ## Safety
+    /// 
+    /// This is unsafe as it is impossible to guarantee a given PageTableEntry
+    /// represents a valid entry for a page table. The caller must ensure it does so
+    pub unsafe fn set_entry(&mut self, index: usize, entry: PageTableEntry) {
+        self.table[index] = entry;
     }
 }
 

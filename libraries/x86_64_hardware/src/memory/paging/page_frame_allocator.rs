@@ -4,6 +4,8 @@ use crate::memory::{PAGE_SIZE,PhysicalAddress};
 
 pub trait FrameAllocator {
     fn request_page(&mut self) -> PhysicalAddress;
+
+    fn free_page(&mut self, address: PhysicalAddress);
 }
 
 pub struct PageFrameAllocator {
@@ -22,21 +24,6 @@ impl PageFrameAllocator {
             reserved_memory: reserved_memory,
             used_memory: used_memory,
             last_allocated_page: 0,
-        }
-    }
-
-    pub fn free_page(&mut self, address: PhysicalAddress) {
-        let page_number = address.as_usize() / PAGE_SIZE as usize;
-        if !self.page_bitmap.get(page_number) {
-            return;
-        } else {
-            if self.page_bitmap.set(page_number, false) {
-                self.free_memory += PAGE_SIZE;
-                self.used_memory -= PAGE_SIZE;
-                if self.last_allocated_page > page_number {
-                    self.last_allocated_page = page_number;
-                }
-            }
         }
     }
 
@@ -130,5 +117,20 @@ impl FrameAllocator for PageFrameAllocator {
         }
 
         return PhysicalAddress::new(0);
+    }
+
+    fn free_page(&mut self, address: PhysicalAddress) {
+        let page_number = address.as_usize() / PAGE_SIZE as usize;
+        if !self.page_bitmap.get(page_number) {
+            return;
+        } else {
+            if self.page_bitmap.set(page_number, false) {
+                self.free_memory += PAGE_SIZE;
+                self.used_memory -= PAGE_SIZE;
+                if self.last_allocated_page > page_number {
+                    self.last_allocated_page = page_number;
+                }
+            }
+        }
     }
 }

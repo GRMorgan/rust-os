@@ -1,5 +1,6 @@
 **/target
 *.fd
 **/bin
+**/obj
 out.txt
 *.o

@@ -10,4 +10,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 bootinfo = { path = "../libraries/bootinfo" }
-x86_64_hardware = { path = "../x86_64_hardware" }
+x86_64_hardware = { path = "../libraries/x86_64_hardware" }

@@ -1,7 +1,7 @@
 BOOTLOADER_DIR = bootloader_uefi
 ASSETS_DIR = assets
 KERNEL_DIR = kernel
-X86_64_HARDWARE_DIR = x86_64_hardware
+X86_64_HARDWARE_DIR = libraries/x86_64_hardware
 BINDIR = bin
 OSNAME = RustOs
 OSIMAGE = $(BINDIR)/$(OSNAME).img

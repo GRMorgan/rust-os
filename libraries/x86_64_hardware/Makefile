@@ -22,6 +22,8 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.s
 
 clean:
 	-rm -rf $(BINDIR)
+	-rm -rf $(OBJDIR)
+	cargo clean
 
 
 .PHONY : clean all

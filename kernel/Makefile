@@ -6,13 +6,12 @@ ASMFLAGS = -g
 BINDIR = bin
 OBJDIR = obj
 SRCDIR = src
-X86_64_SRCDIR = ../x86_64_hardware/src
 
 SOURCES = $(shell find src/ -type f -name '*.rs')
 ASM_SOURCES = $(shell find src/ -type f -name '*.s')
 LIBKERNEL = target/x86_64-unknown-none/debug/libkernel.a
 
-X86_64_HARDWARE_DIR = ../x86_64_hardware
+X86_64_HARDWARE_DIR = ../libraries/x86_64_hardware
 X86_64_HARDWARE_LIB = $(X86_64_HARDWARE_DIR)/bin/x86_64_hardware.a
 
 OBJS = $(patsubst $(SRCDIR)/%.s, $(OBJDIR)/%.o, $(ASM_SOURCES))

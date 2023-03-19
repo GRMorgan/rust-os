@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitmap = { path = "../libraries/bitmap" }
+bitmap = { path = "../bitmap" }
 spin = "0.9.6"

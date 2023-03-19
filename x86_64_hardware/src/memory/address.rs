@@ -53,7 +53,7 @@ const P3_INDEX_MASK: u64 = PAGE_TABLE_INDEX_MASK << P3_OFFSET;
 const P4_OFFSET: u64 = P3_OFFSET + 9;
 const P4_INDEX_MASK: u64 = PAGE_TABLE_INDEX_MASK << P4_OFFSET;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
 pub struct VirtualAddress(u64);
 
@@ -121,5 +121,11 @@ impl VirtualAddress {
     #[inline]
     pub const unsafe fn get_mut_ptr<T>(self) ->  *mut T {
         return self.0 as *mut T;
+    }
+}
+
+impl PartialOrd for VirtualAddress {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        return self.0.partial_cmp(&other.0);
     }
 }

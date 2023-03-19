@@ -13,9 +13,17 @@ name = "bitmap"
 version = "0.1.0"
 
 [[package]]
+name = "bootinfo"
+version = "0.1.0"
+dependencies = [
+ "x86_64_hardware",
+]
+
+[[package]]
 name = "kernel"
 version = "0.1.0"
 dependencies = [
+ "bootinfo",
  "x86_64_hardware",
 ]
 

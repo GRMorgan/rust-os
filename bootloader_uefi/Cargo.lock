@@ -13,10 +13,18 @@ name = "bitmap"
 version = "0.1.0"
 
 [[package]]
+name = "bootinfo"
+version = "0.1.0"
+dependencies = [
+ "x86_64_hardware",
+]
+
+[[package]]
 name = "bootloader_uefi"
 version = "0.1.0"
 dependencies = [
  "bitmap",
+ "bootinfo",
  "elf",
  "r-efi",
  "x86_64_hardware",

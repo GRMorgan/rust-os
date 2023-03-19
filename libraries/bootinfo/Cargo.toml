@@ -1,13 +1,9 @@
 [package]
-name = "kernel"
+name = "bootinfo"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-crate-type = ["staticlib"]
-
 [dependencies]
-bootinfo = { path = "../libraries/bootinfo" }
-x86_64_hardware = { path = "../x86_64_hardware" }
+x86_64_hardware = { path = "../../x86_64_hardware" }

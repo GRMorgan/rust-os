@@ -2,6 +2,7 @@
 #![no_std]
 
 use core::fmt::Write;
+use bootinfo::BootInfo;
 use loaded_asset_list::LoadedAssetList;
 use r_efi::efi;
 use elf;
@@ -37,6 +38,9 @@ pub extern "C" fn efi_main(h: efi::Handle, st: *mut efi::SystemTable) -> efi::St
 
 fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi::Status> {
     let mut out = system_table.con_out();
+    let bootinfo_num_pages = (core::mem::size_of::<BootInfo>() + PAGE_SIZE as usize - 1) / PAGE_SIZE as usize;
+    let mut bootinfo = system_table.boot_services().allocate_pages::<BootInfo>(r_efi::system::LOADER_DATA, bootinfo_num_pages)?;
+    unsafe { (*bootinfo).next_available_kernel_page = VirtualAddress::new(0); }
 
     let (kernel_asset_list, entry_point) = load_kernel(h, system_table)?;
 
@@ -62,13 +66,27 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     //Map the kernel into the new page table
     for asset in kernel_asset_list.iter() {
         page_table_manager.map_memory_pages(asset.virtual_address, asset.physical_address, asset.num_pages as u64, &mut allocator);
+        let max_address = asset.virtual_address.increment_page_4kb(asset.num_pages as u64);
+        if max_address > unsafe {(*bootinfo).next_available_kernel_page} {
+            unsafe { (*bootinfo).next_available_kernel_page = max_address; }
+        }
     }
+
+    //Map the bootinfo into kernel space
+    let bootinfo_virtual_address = unsafe { (*bootinfo).next_available_kernel_page };
+    let bootinfo_physical_address = PhysicalAddress::new(bootinfo as u64);
+    page_table_manager.map_memory_pages(bootinfo_virtual_address, bootinfo_physical_address, bootinfo_num_pages as u64, &mut allocator);
+    unsafe { (*bootinfo).next_available_kernel_page = bootinfo_virtual_address.increment_page_4kb(bootinfo_num_pages as u64); }
 
     unsafe { page_table_manager.activate_page_table(); }
     com1_println!("New page table activated");
 
-    let kernel_start: unsafe extern "sysv64" fn() = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };
-    unsafe { (kernel_start)() };
+    //Update boot info pointer to point to the kernel mapped address
+    bootinfo = unsafe { bootinfo_virtual_address.get_mut_ptr::<BootInfo>() };
+    com1_println!("Next kernel virtual address: {:#x}", unsafe { (*bootinfo).next_available_kernel_page.as_u64() } );
+
+    let kernel_start: unsafe extern "sysv64" fn(*mut BootInfo) = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };
+    unsafe { (kernel_start)(bootinfo) };
 
     return Ok(());
 }

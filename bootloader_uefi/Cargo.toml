@@ -9,5 +9,5 @@ edition = "2021"
 r-efi = "4.1.0"
 bitmap = { path = "../libraries/bitmap" }
 bootinfo = { path = "../libraries/bootinfo" }
-elf = { path = "../elf" }
+elf = { path = "../libraries/elf" }
 x86_64_hardware = { path = "../x86_64_hardware" }

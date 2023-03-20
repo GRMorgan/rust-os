@@ -1,4 +1,4 @@
-use x86_64_hardware::memory::paging::PageFrameAllocator;
+use x86_64_hardware::memory::paging::{PageFrameAllocator, PageTableManager};
 use x86_64_hardware::{com1_println, devices::uart_16550::COM1};
 use x86_64_hardware::tables::*;
 
@@ -23,7 +23,13 @@ pub extern "C" fn kernel_main(bootinfo: *mut bootinfo::BootInfo) {
 
     let meminfo = unsafe { (*bootinfo).meminfo.move_out() };
 
-    let allocator =  unsafe { PageFrameAllocator::new_from_bitmap(&meminfo.bitmap, meminfo.free_memory, meminfo.reserved_memory, meminfo.used_memory) };
+    let mut allocator =  unsafe { PageFrameAllocator::new_from_bitmap(&meminfo.bitmap, meminfo.free_memory, meminfo.reserved_memory, meminfo.used_memory) };
+
+    let page_table_manager = PageTableManager::new_from_cr3(unsafe { (*bootinfo).page_table_memory_offset});
+    for index in 0..255usize {
+        page_table_manager.unmap_p4_index(index, &mut allocator);
+    }
+    com1_println!("After identity map cleared!");
 
     loop { }
 }

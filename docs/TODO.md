@@ -1,9 +1,8 @@
-# Pass through the memory bitmap
-- Must be mapped into kernel space
-
-# Create page frame allocator in kernel
-
 # Clear Page Table of initial identity mapping
+
+# Recover firmware page table frames
+
+# Mark all recoverable memory from EFI mem map
 
 # IDT/Interrupt setup
 

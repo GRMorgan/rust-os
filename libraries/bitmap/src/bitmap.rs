@@ -59,6 +59,30 @@ impl Bitmap {
         }
     }
 
+    /// Returns the buffer as a u8 pointer.
+    /// 
+    /// ## Safety
+    /// 
+    /// This is unsafe as the caller could store a permanent reference to the bitmap
+    /// buffer. The caller must ensure that this bitmap is being discarded after
+    /// calling this or that the pointer is not stored
+    pub unsafe fn get_buffer(&self) -> *mut u8 {
+        return self.buffer as *mut u8;
+    }
+
+    /// Sets the buffer
+    /// 
+    /// ## Safety
+    /// 
+    /// This is unsafe as the caller could pass an invalid memory block or pass one
+    /// that is too smaller. The caller must ensure the passed in pointer is:
+    /// 1. Only used by this Bitmap
+    /// 2. Is a valid pointer
+    /// 3. Points to a memory block large enough for the Bitmap
+    pub unsafe fn set_buffer(&mut self, buffer: *mut u8) {
+        self.buffer = buffer as *mut BitmapByte;
+    }
+
     pub fn size(&self) -> usize {
         return self.size;
     }

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 x86_64_hardware = { path = "../x86_64_hardware" }
+bitmap = { path = "../bitmap" }

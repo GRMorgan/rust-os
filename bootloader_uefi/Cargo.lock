@@ -16,6 +16,7 @@ version = "0.1.0"
 name = "bootinfo"
 version = "0.1.0"
 dependencies = [
+ "bitmap",
  "x86_64_hardware",
 ]
 

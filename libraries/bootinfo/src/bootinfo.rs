@@ -1,5 +1,7 @@
 use x86_64_hardware::memory::VirtualAddress;
 
+use crate::MemInfo;
+
 //Randomly generated magic values. Replace with something fancy like the OS name once it has a name.
 const BOOTINFO_MAGIC: [u8;4] = [15, 106, 86, 167];
 
@@ -8,6 +10,7 @@ pub struct BootInfo {
     magic: [u8;4],
     pub page_table_memory_offset: u64,
     pub next_available_kernel_page: VirtualAddress,
+    pub meminfo: MemInfo,
 }
 
 impl BootInfo {
@@ -22,7 +25,8 @@ impl Default for BootInfo {
         BootInfo {
             magic: BOOTINFO_MAGIC,
             page_table_memory_offset: 0,
-            next_available_kernel_page: VirtualAddress::new(0)
+            next_available_kernel_page: VirtualAddress::new(0),
+            meminfo: MemInfo::default(),
         }   
     }
 }

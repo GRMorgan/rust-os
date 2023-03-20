@@ -58,6 +58,7 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
         allocator.lock_pages(asset.physical_address, asset.num_pages);
     }
 
+    let firmware_page_table_manager = PageTableManager::new_from_cr3(0);
     let (mut page_table_manager, offset) = match init_page_table_manager(&mut allocator, max_physical_address) {
         Some(ptm) => ptm,
         None => {
@@ -74,6 +75,8 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
         page_table_manager.set_offset(offset);
         
     }
+
+    firmware_page_table_manager.release_tables(&mut allocator);
 
     //Map the kernel into the new page table
     for asset in kernel_asset_list.iter() {

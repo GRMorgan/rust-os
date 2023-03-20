@@ -46,6 +46,14 @@ impl PageTableManager {
         unsafe { return &(*p4_ptr); }
     }
 
+    pub fn release_tables(&self, allocator: &mut impl FrameAllocator) {
+        for index in 0..511usize {
+            self.unmap_p4_index(index, allocator)
+        }
+
+        allocator.free_page(self.p4);
+    }
+
     /// Sets the offset this PageTableManager uses to handle page virtual address
     /// lookup
     /// 

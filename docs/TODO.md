@@ -1,5 +1,7 @@
-# Mark all recoverable memory from EFI mem map
+# ACPI Table Mapping
 
 # IDT/Interrupt setup
 
 # PIC initialisation
+
+# PIT initialisation

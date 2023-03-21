@@ -29,7 +29,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.s
 	$(ASM) $(ASMFLAGS) -c $^ -o $@
 
 $(LIBKERNEL): $(SOURCES)
-	cargo build --target x86_64-unknown-none
+	cargo rustc --target x86_64-unknown-none -- -C code-model=kernel
 
 $(BINDIR):
 	@mkdir -p $(BINDIR)

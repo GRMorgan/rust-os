@@ -120,10 +120,30 @@ impl BootServices {
         }
     }
 
+    pub fn  get_graphics_output_protocol(&self) -> Result<GraphicsOutputProtocol, efi::Status> {
+        let mut guid: efi::Guid = graphics_output::PROTOCOL_GUID;
+        let registration: *mut core::ffi::c_void = core::ptr::null_mut::<core::ffi::c_void>();
+        let fs_ptr: *mut graphics_output::Protocol = self.locate_protocol(&mut guid, registration)? as *mut graphics_output::Protocol;
+        return Ok(GraphicsOutputProtocol::new(fs_ptr));
+    }
+
     fn handle_protocol(&self, h: efi::Handle, guid: *mut efi::Guid) -> Result<*mut core::ffi::c_void, efi::Status> {
         let mut output: *mut core::ffi::c_void = core::ptr::null_mut::<core::ffi::c_void>();
         let s = unsafe {
             ((*self.boot_services_ptr).handle_protocol)(h, guid, &mut output)
+        };
+
+        if s == efi::Status::SUCCESS {
+            return Ok(output);
+        } else {
+            return Err(s);
+        }
+    }
+
+    fn locate_protocol(&self, guid: *mut efi::Guid, registration: *mut core::ffi::c_void) -> Result<*mut core::ffi::c_void, efi::Status> {
+        let mut output: *mut core::ffi::c_void = core::ptr::null_mut::<core::ffi::c_void>();
+        let s = unsafe {
+            ((*self.boot_services_ptr).locate_protocol)(guid, registration, &mut output)
         };
 
         if s == efi::Status::SUCCESS {

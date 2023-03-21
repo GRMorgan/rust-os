@@ -4,7 +4,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = 0xFFFF800000000000;
+    . = 0xFFFFFFFF80000000;
     _KernelStart = .;
     .text :
     {

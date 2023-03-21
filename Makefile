@@ -16,8 +16,7 @@ $(OSIMAGE): modules
 	mformat -i $(OSIMAGE) -i 1440 ::
 	mmd -i $(OSIMAGE) ::/EFI
 	mmd -i $(OSIMAGE) ::/EFI/BOOT
-	mcopy -i $(OSIMAGE) $(BOOTLOADER) ::/EFI/BOOT
-	mcopy -i $(OSIMAGE) $(ASSETS_DIR)/startup.nsh ::
+	mcopy -i $(OSIMAGE) $(BOOTLOADER) ::/EFI/BOOT/BOOTX64.EFI
 	mcopy -i $(OSIMAGE) $(KERNEL) ::
 
 modules:

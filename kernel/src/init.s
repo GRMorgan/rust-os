@@ -12,5 +12,5 @@ stack_top:
 # Arguments:
 # rdi - Pointer to the BootInfo struct. This is just passed onto kernel_main
 _start:
-    movabs $stack_top, %rsp
+    movq $stack_top, %rsp
     call kernel_main

@@ -38,10 +38,11 @@ pub extern "C" fn efi_main(h: efi::Handle, st: *mut efi::SystemTable) -> efi::St
 }
 
 fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi::Status> {
-    let mut out = system_table.con_out();
     let bootinfo_num_pages = (core::mem::size_of::<BootInfo>() + PAGE_SIZE as usize - 1) / PAGE_SIZE as usize;
     let mut bootinfo = system_table.boot_services().allocate_pages::<BootInfo>(r_efi::system::LOADER_DATA, bootinfo_num_pages)?;
     unsafe { (*bootinfo) = BootInfo::default(); }
+
+    unsafe { (*bootinfo).framebuffer = initialise_gop(system_table)?; }
 
     let (kernel_asset_list, entry_point) = load_kernel(h, system_table)?;
 
@@ -49,17 +50,25 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
 
     system_table.boot_services().exit_boot_services(h, mem_info.map_key)?;
 
+    unsafe {
+        (*bootinfo).framebuffer.clear_framebuffer(0, 0);
+    }
+
     let mut allocator = mem_info.map.init_frame_allocator();
     let max_physical_address = mem_info.map.max_physical_address();
     //We're done with the mem_map so free the pages
     mem_info.map.free_pages(&mut allocator);
 
+    let mut kernel_base_address = VirtualAddress::new(MAX_VIRTUAL_ADDRESS);
     for asset in kernel_asset_list.iter() {
         allocator.lock_pages(asset.physical_address, asset.num_pages);
+        if asset.virtual_address < kernel_base_address {
+            kernel_base_address = asset.virtual_address;
+        }
     }
 
     let firmware_page_table_manager = PageTableManager::new_from_cr3(0);
-    let (mut page_table_manager, offset) = match init_page_table_manager(&mut allocator, max_physical_address) {
+    let (mut page_table_manager, offset) = match init_page_table_manager(&mut allocator, max_physical_address, kernel_base_address) {
         Some(ptm) => ptm,
         None => {
             com1_println!("Memsize too large");
@@ -73,7 +82,6 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     unsafe { 
         page_table_manager.activate_page_table();
         page_table_manager.set_offset(offset);
-        
     }
 
     firmware_page_table_manager.release_tables(&mut allocator);
@@ -117,16 +125,14 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
 }
 
 fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(LoadedAssetList, VirtualAddress), efi::Status> {
-    let mut out = system_table.con_out();
-
     let file_volume = system_table.boot_services().open_volume(h)?;
     let kernel_file = file_volume.open("kernel.elf", r_efi::protocols::file::MODE_READ, r_efi::protocols::file::READ_ONLY)?;
-    efi_write!(out, "Opened kernel file\r\n");
+    com1_println!("Opened kernel file");
 
     let elf_common: elf::ElfHeaderCommon  = kernel_file.read_struct::<elf::ElfHeaderCommon>()?;
 
-    validate_elf(&elf_common, &mut out)?;
-    efi_write!(out, "Kernel header verified successfully!\r\n");
+    validate_elf(&elf_common)?;
+    com1_println!("Kernel header verified successfully!");
 
     kernel_file.set_position(0)?;
 
@@ -154,7 +160,7 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
     return Ok((kernel_asset_list, VirtualAddress::new(elf_64.e_entry)));
 }
 
-fn init_page_table_manager(mut allocator: &mut PageFrameAllocator, max_physical_address: PhysicalAddress) -> Option<(PageTableManager, u64)> {
+fn init_page_table_manager(mut allocator: &mut PageFrameAllocator, max_physical_address: PhysicalAddress, kernel_base_address: VirtualAddress) -> Option<(PageTableManager, u64)> {
     if max_physical_address.as_u64() > MAX_MEM_SIZE {
         return None;
     }
@@ -166,44 +172,57 @@ fn init_page_table_manager(mut allocator: &mut PageFrameAllocator, max_physical_
 
     //The size of the address space set aside in GB
     let num_gb = (max_physical_address.as_u64() + MEM_1G - 1) / MEM_1G;
-    // The correct calcuation is from the address after the max so add 1 at the end
-    let offset = (MAX_VIRTUAL_ADDRESS - num_gb * MEM_1G) + 1;
+    //Map the memory before the kernel
+    let offset = kernel_base_address.as_u64() - num_gb * MEM_1G;
 
     page_table_manager.map_memory_pages(VirtualAddress::new(offset), PhysicalAddress::new(0), num_mem_pages, allocator);
 
     return Some((page_table_manager, offset));
 }
 
-fn validate_elf(header: &elf::ElfHeaderCommon, out: &mut uefi::SimpleTextOutputProtocol) -> Result<(),efi::Status> {
+fn validate_elf(header: &elf::ElfHeaderCommon) -> Result<(),efi::Status> {
     if !header.valid_magic() {
-        efi_write!(out, "Invalid magic \r\n");
+        com1_println!("Invalid magic");
         return Err(efi::Status::LOAD_ERROR);
     }
 
     if header.class() != elf::ElfClass::ElfClass64 {
-        efi_write!(out, "Invalid class {:?} \r\n", header.class());
+        com1_println!("Invalid class {:?}", header.class());
         return Err(efi::Status::LOAD_ERROR);
     }
 
     if header.data_encoding() != elf::ElfData::ElfData2Lsb {
-        efi_write!(out, "Invalid data encoding {:?} \r\n", header.data_encoding());
+        com1_println!("Invalid data encoding {:?}", header.data_encoding());
         return Err(efi::Status::LOAD_ERROR);
     }
 
     if header.e_type() != elf::ElfType::ElfTypeExec {
-        efi_write!(out, "Invalid type {:?} \r\n", header.e_type());
+        com1_println!("Invalid type {:?}", header.e_type());
         return Err(efi::Status::LOAD_ERROR);
     }
 
     if header.e_machine() != elf::ElfMachine::ElfMachineX8664 {
-        efi_write!(out, "Invalid machine {:?} \r\n", header.e_machine());
+        com1_println!("Invalid machine {:?}", header.e_machine());
         return Err(efi::Status::LOAD_ERROR);
     }
 
     if header.e_version() != elf::ElfVersion::ElfVersionCurrent {
-        efi_write!(out, "Invalid elf version {:?} \r\n", header.e_version());
+        com1_println!("Invalid elf version {:?}", header.e_version());
         return Err(efi::Status::LOAD_ERROR);
     }
     
     return Ok(());
+}
+
+fn initialise_gop(system_table: uefi::SystemTableWrapper) -> Result<bootinfo::FrameBuffer, efi::Status>{
+    let gop = match system_table.boot_services().get_graphics_output_protocol() {
+        Ok(gop) => gop,
+        Err(s) => { 
+            com1_println!("Cannot load GOP. Status{}", s.as_usize());
+            return Err(s);
+        }
+    };
+    com1_println!("GOP loaded");
+
+    return Ok(gop.get_framebuffer());
 }

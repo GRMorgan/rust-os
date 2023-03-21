@@ -43,10 +43,16 @@ impl EfiMemoryDescriptor {
 
     //True if the memory is potentially usable (i.e. isn't reserved, IO mapped or similar)
     fn is_usable_memory(&self) -> bool {
-        if self.mem_type() == DescriptorType::EfiConventionalMemory {
-            return true;
-        }
-        return false;
+        return match self.mem_type() {
+            DescriptorType::EfiLoaderCode => true,
+            DescriptorType::EfiLoaderData => true,
+            DescriptorType::EfiBootServicesCode => true,
+            DescriptorType::EfiBootServicesData => true,
+            DescriptorType::EfiConventionalMemory => true,
+            DescriptorType::EfiACPIReclaimMemory => true,
+            _ => false,
+            
+        };
     }
 
     pub fn mem_type(&self) -> DescriptorType {

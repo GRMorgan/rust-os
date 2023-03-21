@@ -1,25 +1,5 @@
 use r_efi::efi::Guid;
 
-//eb9d2d30-2d88-11d3-9a16-0090273fc14d
-pub const ACPI_V1_0_RSDP_GUID: Guid = Guid::from_fields(
-    0xeb9d2d30,
-    0x2d88,
-    0x11d3,
-    0x9a,
-    0x16,
-    &[0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d],
-);
-
-//8868e871-e4f1-11d3-bc22-0080c73c8881
-pub const ACPI_V2_0_RSDP_GUID: Guid = Guid::from_fields(
-    0x8868e871,
-    0xe4f1,
-    0x11d3,
-    0xbc,
-    0x22,
-    &[0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81],
-);
-
 pub struct ConfigurationTable {
     num_entries: usize,
     configuration_table: *mut ConfigurationTableEntry,
@@ -59,10 +39,47 @@ impl ConfigurationTable {
     }
 }
 
+//eb9d2d30-2d88-11d3-9a16-0090273fc14d
+pub const ACPI_V1_0_RSDP_GUID: Guid = Guid::from_fields(
+    0xeb9d2d30,
+    0x2d88,
+    0x11d3,
+    0x9a,
+    0x16,
+    &[0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d],
+);
+
+//8868e871-e4f1-11d3-bc22-0080c73c8881
+pub const ACPI_V2_0_RSDP_GUID: Guid = Guid::from_fields(
+    0x8868e871,
+    0xe4f1,
+    0x11d3,
+    0xbc,
+    0x22,
+    &[0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81],
+);
+
+#[derive(PartialEq, Debug)]
+pub enum TableType {
+    AcpiV1_0,
+    AcpiV2_0,
+    Unknown,
+}
+
 #[derive(Clone, Copy)]
 pub struct ConfigurationTableEntry {
-    pub vendor_guid: r_efi::efi::Guid,
-    pub vendor_table: *mut core::ffi::c_void,
+    vendor_guid: r_efi::efi::Guid,
+    vendor_table: *mut core::ffi::c_void,
+}
+
+impl ConfigurationTableEntry {
+    pub fn get_type(&self) -> TableType {
+        match self.vendor_guid {
+            ACPI_V1_0_RSDP_GUID => TableType::AcpiV1_0,
+            ACPI_V2_0_RSDP_GUID => TableType::AcpiV2_0,
+            _ => TableType::Unknown,
+        }
+    }
 }
 
 pub struct ConfigurationTableIterator<'a> {

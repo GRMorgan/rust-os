@@ -46,6 +46,8 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
 
     let (kernel_asset_list, entry_point) = load_kernel(h, system_table)?;
 
+    let configuration_table = system_table.get_configuration_table();
+
     let mut mem_info = system_table.boot_services().get_memory_map()?;
 
     system_table.boot_services().exit_boot_services(h, mem_info.map_key)?;

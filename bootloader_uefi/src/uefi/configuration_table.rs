@@ -1,3 +1,4 @@
+use acpi_system_tables::{RsdpV1, RsdpV2};
 use r_efi::efi::Guid;
 
 pub struct ConfigurationTable {
@@ -18,6 +19,24 @@ impl ConfigurationTable {
             num_entries: num_entries,
             configuration_table: configuration_table
         }
+    }
+
+    pub fn get_rsdp_v1(&self) -> Option<RsdpV1> {
+        for entry in self.iter() {
+            if entry.get_type() == TableType::AcpiV1_0 {
+                return entry.get_rsdp_v1();
+            }
+        }
+        return None;
+    }
+
+    pub fn get_rsdp_v2(&self) -> Option<RsdpV2> {
+        for entry in self.iter() {
+            if entry.get_type() == TableType::AcpiV2_0 {
+                return entry.get_rsdp_v2();
+            }
+        }
+        return None;
     }
 
     pub fn get_entry(&self, index: usize) -> Option<ConfigurationTableEntry> {
@@ -67,6 +86,7 @@ pub enum TableType {
 }
 
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub struct ConfigurationTableEntry {
     vendor_guid: r_efi::efi::Guid,
     vendor_table: *mut core::ffi::c_void,
@@ -79,6 +99,22 @@ impl ConfigurationTableEntry {
             ACPI_V2_0_RSDP_GUID => TableType::AcpiV2_0,
             _ => TableType::Unknown,
         }
+    }
+
+    pub fn get_rsdp_v1(&self) -> Option<RsdpV1> {
+        if self.get_type() == TableType::AcpiV1_0 {
+            let rsdp_ptr = self.vendor_table as *mut RsdpV1;
+            unsafe{ return Some(*rsdp_ptr); }
+        }
+        return None;
+    }
+
+    pub fn get_rsdp_v2(&self) -> Option<RsdpV2> {
+        if self.get_type() == TableType::AcpiV2_0 {
+            let rsdp_ptr = self.vendor_table as *mut RsdpV2;
+            unsafe{ return Some(*rsdp_ptr); }
+        }
+        return None;
     }
 }
 

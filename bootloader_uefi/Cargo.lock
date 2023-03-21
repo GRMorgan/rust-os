@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "acpi_system_tables"
+version = "0.1.0"
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -24,6 +28,7 @@ dependencies = [
 name = "bootloader_uefi"
 version = "0.1.0"
 dependencies = [
+ "acpi_system_tables",
  "bitmap",
  "bootinfo",
  "elf",

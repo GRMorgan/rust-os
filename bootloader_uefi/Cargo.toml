@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 r-efi = "4.1.0"
+acpi_system_tables = { path = "../libraries/acpi_system_tables" }
 bitmap = { path = "../libraries/bitmap" }
 bootinfo = { path = "../libraries/bootinfo" }
 elf = { path = "../libraries/elf" }

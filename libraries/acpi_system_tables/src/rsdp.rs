@@ -1,3 +1,5 @@
+use crate::{ExtendedSystemDescriptionTable, RootSystemDescriptionTable};
+
 const RSDP_V1_SIGNATURE: [u8;8] = [b'R', b'S', b'D', b' ', b'P', b'T', b'R', b' '];
 
 #[repr(C)]
@@ -13,6 +15,10 @@ pub struct RsdpV1 {
 impl RsdpV1 {
     pub fn is_valid(&self) -> bool {
         return self.valid_signature() && self.valid_checksum();
+    }
+
+    pub fn get_rsdt(&self, offset: u64) -> RootSystemDescriptionTable {
+        return unsafe { RootSystemDescriptionTable::new(self.rsdt_physical_address, offset) };
     }
 
     fn valid_signature(&self) -> bool {
@@ -55,6 +61,10 @@ pub struct RsdpV2 {
 impl RsdpV2 {
     pub fn is_valid(&self) -> bool {
         return self.v1.is_valid() && self.valid_checksum();
+    }
+
+    pub fn get_xsdt(&self, offset: u64) -> ExtendedSystemDescriptionTable {
+        return unsafe { ExtendedSystemDescriptionTable::new(self.xdst_physical_address, offset) };
     }
 
     fn valid_checksum(&self) -> bool {

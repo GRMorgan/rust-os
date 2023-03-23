@@ -70,7 +70,7 @@ and kernel initialisation to avoid using specific ranges of the address space as
 This is intended to be a multi-processor OS so the allocator must never:
 - Become corrupted due to access from multiple threads
 - Allocate the same frame out to multiple concurrent requests
-- Lose a freed frame because two were allocated simultaneously. While this won't break the system
+- Lose a freed frame because two were freed simultaneously. While this won't break the system
 it does constitute a memory leak that will reduce the stability of the system. This is unacceptable
 in the kernel.
 

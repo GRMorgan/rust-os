@@ -92,7 +92,7 @@ This can be implemented in Rust as the following
 ```rust
 pub struct FrameAllocator {
     buffer: *mut PhysicalAddress,
-    buffer_size: usize
+    buffer_size: usize,
     read_pos: AtomicU16,
     write_pos: u16,
     write_lock: Lock,

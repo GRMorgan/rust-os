@@ -111,4 +111,34 @@ mod tests {
         assert_eq!(true, ringbuffer.is_empty());
         assert_eq!(Some(expected_value3), read_value3);
     }
+
+    #[test]
+    fn test_max_capacity() {
+        let mut buffer: [u64;512] = [0;512];
+        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+
+        for i in 0..511u64 {
+            let response = ringbuffer.write(i);
+            assert_eq!(true, response.is_some());
+        }
+
+        assert_eq!(true, ringbuffer.is_full());
+        let response = ringbuffer.write(511);
+        assert_eq!(None, response);
+    }
+
+    #[test]
+    fn test_max_capacity2() {
+        let mut buffer: [u64;1024] = [0;1024];
+        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 8192) };
+
+        for i in 0..1023u64 {
+            let response = ringbuffer.write(i);
+            assert_eq!(true, response.is_some());
+        }
+        
+        assert_eq!(true, ringbuffer.is_full());
+        let response = ringbuffer.write(1023);
+        assert_eq!(None, response);
+    }
 }

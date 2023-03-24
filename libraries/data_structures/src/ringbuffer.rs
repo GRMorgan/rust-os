@@ -33,6 +33,7 @@ impl<T: Copy> RingBuffer<T> {
         return self.write_pos + 1 == read_pos;
     }
 
+    #[inline]
     pub fn num_items(&self) -> u16 {
         let read_pos = self.read_pos.load(Ordering::Relaxed);
         let mut write_pos = self.write_pos;
@@ -40,6 +41,16 @@ impl<T: Copy> RingBuffer<T> {
             write_pos += self.buffer_size as u16;
         }
         return write_pos - read_pos;
+    }
+
+    #[inline]
+    pub fn max_items(&self) -> u16 {
+        return self.buffer_size as u16 - 1;
+    }
+
+    #[inline]
+    pub fn remaining_space(&self) -> u16 {
+        return self.max_items() - self.num_items();
     }
 
     fn read_val(&self, pos: u16) -> T {

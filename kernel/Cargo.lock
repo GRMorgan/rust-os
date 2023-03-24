@@ -21,10 +21,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "data_structures"
+version = "0.1.0"
+
+[[package]]
 name = "kernel"
 version = "0.1.0"
 dependencies = [
  "bootinfo",
+ "data_structures",
  "x86_64_hardware",
 ]
 

@@ -39,5 +39,8 @@ run: $(OSIMAGE)
 run-debug: $(OSIMAGE)
 	qemu-system-x86_64 -s -S -hda $(OSIMAGE) -m 256M -cpu qemu64 -drive if=pflash,format=raw,unit=0,file="assets/OVMF_CODE-pure-efi.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="assets/OVMF_VARS-pure-efi.fd" -net none -serial stdio > out.txt
 
+test:
+	cd libraries && make test
 
-.PHONY: all modules clean clean-all run run-debug
+
+.PHONY: all modules clean clean-all run run-debug test

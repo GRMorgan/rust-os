@@ -142,7 +142,7 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
 
     let mut kernel_asset_list = crate::loaded_asset_list::LoadedAssetList::new(elf_64.e_phnum as usize, system_table)?;
     for header_index in 0..elf_64.e_phnum {
-        kernel_file.set_position(elf_64.e_phoff + (u64::from(header_index) * u64::from(elf_64.e_phentsize)));
+        kernel_file.set_position(elf_64.e_phoff + (u64::from(header_index) * u64::from(elf_64.e_phentsize)))?;
         let phdr: elf::ElfPhysicalHeader64 = kernel_file.read_struct::<elf::ElfPhysicalHeader64>()?;
 
         match phdr.p_type() {
@@ -150,7 +150,7 @@ fn load_kernel(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result
                 let pages: usize = ((phdr.p_memsz as usize) + PAGE_SIZE as usize - 1)  / PAGE_SIZE as usize;
                 let kernel_mem = system_table.boot_services().allocate_pages::<core::ffi::c_void>(r_efi::system::LOADER_DATA, pages)?;
 
-                kernel_file.set_position(phdr.p_offset);
+                kernel_file.set_position(phdr.p_offset)?;
                 let mut psize = phdr.p_filesz as usize;
                 kernel_file.read(&mut psize, kernel_mem)?;
                 kernel_asset_list.add_asset(PhysicalAddress::new(kernel_mem as u64), pages, VirtualAddress::new(phdr.p_vaddr));

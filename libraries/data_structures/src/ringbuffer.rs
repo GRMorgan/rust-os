@@ -33,6 +33,15 @@ impl<T: Copy> RingBuffer<T> {
         return self.write_pos + 1 == read_pos;
     }
 
+    pub fn num_items(&self) -> u16 {
+        let read_pos = self.read_pos.load(Ordering::Relaxed);
+        let mut write_pos = self.write_pos;
+        if read_pos > write_pos {
+            write_pos += self.buffer_size as u16;
+        }
+        return write_pos - read_pos;
+    }
+
     fn read_val(&self, pos: u16) -> T {
         unsafe {
             let read_ptr = self.buffer.offset(pos as isize);

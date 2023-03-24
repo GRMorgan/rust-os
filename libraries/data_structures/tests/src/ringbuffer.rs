@@ -9,6 +9,7 @@ mod tests {
         
         assert_eq!(None, expected_none);
         assert_eq!(true, ringbuffer.is_empty());
+        assert_eq!(0, ringbuffer.num_items());
     }
 
     #[test]
@@ -18,10 +19,12 @@ mod tests {
         
         let expected_value: u64 = 5;
         ringbuffer.write(expected_value);
+        assert_eq!(1, ringbuffer.num_items());
         assert_eq!(false, ringbuffer.is_empty());
         let read_value = ringbuffer.read();
         assert_eq!(true, ringbuffer.is_empty());
         assert_eq!(Some(expected_value), read_value);
+        assert_eq!(0, ringbuffer.num_items());
     }
 
     #[test]
@@ -31,10 +34,12 @@ mod tests {
         
         let expected_value: u64 = 7;
         ringbuffer.write(expected_value);
+        assert_eq!(1, ringbuffer.num_items());
         assert_eq!(false, ringbuffer.is_empty());
         let read_value = ringbuffer.read();
         assert_eq!(true, ringbuffer.is_empty());
         assert_eq!(Some(expected_value), read_value);
+        assert_eq!(0, ringbuffer.num_items());
     }
 
     #[test]
@@ -47,13 +52,16 @@ mod tests {
 
         ringbuffer.write(expected_value1);
         ringbuffer.write(expected_value2);
+        assert_eq!(2, ringbuffer.num_items());
         assert_eq!(false, ringbuffer.is_empty());
         let read_value1 = ringbuffer.read();
         assert_eq!(false, ringbuffer.is_empty());
         assert_eq!(Some(expected_value1), read_value1);
+        assert_eq!(1, ringbuffer.num_items());
         let read_value2 = ringbuffer.read();
         assert_eq!(true, ringbuffer.is_empty());
         assert_eq!(Some(expected_value2), read_value2);
+        assert_eq!(0, ringbuffer.num_items());
     }
 
     #[test]
@@ -66,13 +74,16 @@ mod tests {
 
         ringbuffer.write(expected_value1);
         ringbuffer.write(expected_value2);
+        assert_eq!(2, ringbuffer.num_items());
         assert_eq!(false, ringbuffer.is_empty());
         let read_value1 = ringbuffer.read();
         assert_eq!(false, ringbuffer.is_empty());
         assert_eq!(Some(expected_value1), read_value1);
+        assert_eq!(1, ringbuffer.num_items());
         let read_value2 = ringbuffer.read();
         assert_eq!(true, ringbuffer.is_empty());
         assert_eq!(Some(expected_value2), read_value2);
+        assert_eq!(0, ringbuffer.num_items());
     }
 
     #[test]

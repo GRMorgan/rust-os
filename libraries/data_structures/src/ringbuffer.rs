@@ -12,6 +12,8 @@ unsafe impl<T: Copy + Send, const N: usize> Sync for RingBuffer<T,N> {}
 unsafe impl<T: Copy + Send, const N: usize> Send for RingBuffer<T,N> {}
 
 impl<T: Copy, const N: usize> RingBuffer<T,N> {
+    /// Initialise a *RingBuffer* where the backing array are all initialised to the value
+    /// *init_value*
     pub const fn new(init_value: T) -> RingBuffer<T,N> {
         return RingBuffer {
             buffer: UnsafeCell::new([init_value;N]),

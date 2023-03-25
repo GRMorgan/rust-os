@@ -1,7 +1,34 @@
-# ACPI Table Mapping
+## Memory Management
 
-# IDT/Interrupt setup
+### Setup Temporary Bitmap Physical Memory Manager
 
-# PIC initialisation
+This needs to exist until the main PMM server is running. For now it is
+basically a permanent component until we implement that server.
 
-# PIT initialisation
+### Implement Kernel Physical Frame Allocator
+
+A simple frame allocator that uses a ring buffer to service the memory
+requirements of creating the page tables (but not necessarily the actual pages)
+and the kernel heap. This will delegate to the PMM via a set of function
+pointers that will initially point to the temp bitmap
+
+### Implement Kernel Heap
+
+This will need to be initialised with enough memory to get the VMM running.
+Once the VMM is running we'll call that for the equivalent of brk().
+
+### Implement VMM
+
+This needs to keep track of all the memory spaces in the kernel. Initially it
+will only care about Mem0 which is the kernel memory map. It will implement a
+full brk/sbrk like interface for the kernel heap but should delegate
+fulfilment of page fault handling to the PMM. When a page fault happens it will
+send an IPC to the PMM with the details and it will tell it which pages to map
+
+## ACPI Table Mapping
+
+## IDT/Interrupt setup
+
+## PIC initialisation
+
+## PIT initialisation

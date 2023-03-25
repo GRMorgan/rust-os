@@ -143,25 +143,57 @@ mod tests {
 
     use rand::Rng;
 
+    const ITER_COUNT: usize = 100000;
     #[test]
-    pub fn test_threaded_access() {
+    pub fn test_threaded_access_write_aggressive() {
+        fn task(start_index: u64, num_items: u64, iter_count: usize) -> std::vec::Vec<u64>  {
+            let mut vec: std::vec::Vec<u64> = Vec::new();
+            for i in start_index..(start_index + num_items) {
+                vec.push(i);
+            }
+            for _ in 0..iter_count {
+                if vec.len() > 0 {
+                    let index = rand::thread_rng().gen_range(0..vec.len());
+                    let val = vec.remove(index);
+                    let result = RING_BUFFER.write(val);
+
+                    if result.is_none() {
+                        vec.push(val);
+                        for _ in 0..5 {
+                            match RING_BUFFER.read() {
+                                Some(val) => {vec.push(val); },
+                                _ => {},
+                            }
+                        }
+                    }
+                } else {
+                    for _ in 0..5 {
+                        match RING_BUFFER.read() {
+                            Some(val) => {vec.push(val); },
+                            _ => {},
+                        }
+                    }
+                }
+            }
+            return vec;
+        }
         let t1 = std::thread::spawn(move || {
-            let mut vec = test_buffer(0, 512, 100000);
-            unsafe {VEC1.append( &mut vec);}
+            let mut vec = task(0, 512, ITER_COUNT);
+            unsafe {VEC1.append(&mut vec);}
         });
 
         let t2 = std::thread::spawn(move || {
-            let mut vec = test_buffer(512, 512, 100000);
-            unsafe {VEC2.append( &mut vec);}
+            let mut vec = task(512, 512, ITER_COUNT);
+            unsafe {VEC2.append(&mut vec);}
         });
 
         let t3 = std::thread::spawn(move || {
-            let mut vec = test_buffer(1024, 512, 100000);
-            unsafe {VEC3.append( &mut vec);}
+            let mut vec = task(1024, 512, ITER_COUNT);
+            unsafe {VEC3.append(&mut vec);}
         });
 
         let t4 = std::thread::spawn(move || {
-            let mut vec = test_buffer(1536, 512, 100000);
+            let mut vec = task(1536, 512, ITER_COUNT);
             unsafe {VEC4.append(&mut vec);}
         });
 
@@ -194,46 +226,92 @@ mod tests {
             assert_eq!(i  as u64, vec_test[i]);
         }
     }
+    
 
-    fn test_buffer(start_index: u64, num_items: u64, iter_count: usize) -> std::vec::Vec<u64>  {
-        let mut vec: std::vec::Vec<u64> = Vec::new();
-        for i in start_index..(start_index + num_items) {
-            vec.push(i);
+    static RING_BUFFER2: RingBuffer<u64, 2048> = RingBuffer::new(0);
+    static mut VEC2_1: std::vec::Vec<u64> = Vec::new();
+    static mut VEC2_2: std::vec::Vec<u64> = Vec::new();
+    static mut VEC2_3: std::vec::Vec<u64> = Vec::new();
+    static mut VEC2_4: std::vec::Vec<u64> = Vec::new();
+
+    const ITER_COUNT2: usize = 100000;
+    #[test]
+    pub fn test_threaded_access_read_aggressive() {
+        for value in 0..RING_BUFFER2.remaining_space() as u64 {
+            RING_BUFFER2.write(value);
         }
+        fn task(iter_count: usize) -> std::vec::Vec<u64>  {
+            let mut vec: std::vec::Vec<u64> = Vec::new();
 
-        for _ in 0..iter_count {
-            if vec.len() > 0 {
-                let index = rand::thread_rng().gen_range(0..vec.len());
-                let val = vec.remove(index);
-                let result = RING_BUFFER.write(val);
-
-                if result.is_none() {
-                    vec.push(val);
-                    match RING_BUFFER.read() {
-                        Some(val) => {vec.push(val); },
-                        _ => {},
+            for _ in 0..iter_count {
+                if RING_BUFFER2.is_empty() {
+                    for _ in 0..25 {
+                        if vec.len() > 0 {
+                            let index = rand::thread_rng().gen_range(0..vec.len());
+                            let val = vec.remove(index);
+                            let result = RING_BUFFER2.write(val);
+                            if result.is_none() {
+                                vec.push(val);
+                            }
+                        }
                     }
-                    match RING_BUFFER.read() {
-                        Some(val) => {vec.push(val); },
-                        _ => {},
-                    }
-                    match RING_BUFFER.read() {
-                        Some(val) => {vec.push(val); },
-                        _ => {},
-                    }
-                    match RING_BUFFER.read() {
-                        Some(val) => {vec.push(val); },
-                        _ => {},
+                } else {
+                    for _ in 0..5 {
+                        match RING_BUFFER2.read() {
+                            Some(val) => { vec.push(val); }
+                            _ => {}
+                        }
                     }
                 }
-            } else {
-                match RING_BUFFER.read() {
-                    Some(val) => {vec.push(val); },
-                    _ => {},
+            }
+            return vec;
+        }
+        let t1 = std::thread::spawn(move || {
+            let mut vec = task(ITER_COUNT2);
+            unsafe {VEC2_1.append(&mut vec);}
+        });
+
+        let t2 = std::thread::spawn(move || {
+            let mut vec = task(ITER_COUNT2);
+            unsafe {VEC2_2.append(&mut vec);}
+        });
+
+        let t3 = std::thread::spawn(move || {
+            let mut vec = task(ITER_COUNT2);
+            unsafe {VEC2_3.append(&mut vec);}
+        });
+
+        let t4 = std::thread::spawn(move || {
+            let mut vec = task(ITER_COUNT2);
+            unsafe {VEC2_4.append(&mut vec);}
+        });
+
+        t1.join().unwrap();
+        t2.join().unwrap();
+        t3.join().unwrap();
+        t4.join().unwrap();
+
+        let mut vec_test: std::vec::Vec<u64> = Vec::new();
+        unsafe { 
+            vec_test.append(&mut VEC2_1);
+            vec_test.append(&mut VEC2_2);
+            vec_test.append(&mut VEC2_3);
+            vec_test.append(&mut VEC2_4);
+
+            while !RING_BUFFER2.is_empty() {
+                match RING_BUFFER2.read() {
+                    Some(val) => { vec_test.push(val); }
+                    _ => {}
                 }
             }
         }
 
-        return vec;
+        vec_test.sort();
+        
+        assert_eq!(2047, vec_test.len());
+
+        for i in 0..2047 {
+            assert_eq!(i  as u64, vec_test[i]);
+        }
     }
 }

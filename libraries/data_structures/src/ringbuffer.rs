@@ -78,11 +78,11 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
 
     pub fn read(&self) -> Option<T> {
         loop {
+            let read_pos = self.read_pos.load(Ordering::Relaxed);
             if self.is_empty() {
                 return None;
             }
 
-            let read_pos = self.read_pos.load(Ordering::Relaxed);
             let output = self.read_val(read_pos as usize);
             let mut new_read_pos = read_pos + 1;
             if new_read_pos == self.buffer_size as u16 {

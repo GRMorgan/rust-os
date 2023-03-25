@@ -67,7 +67,7 @@ impl<T: Copy> RingBuffer<T> {
         }
     }
 
-    pub fn read(&mut self) -> Option<T> {
+    pub fn read(&self) -> Option<T> {
         loop {
             if self.is_empty() {
                 return None;

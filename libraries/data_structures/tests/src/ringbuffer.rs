@@ -1,10 +1,11 @@
+#[cfg(test)]
 mod tests {
     use data_structures::ringbuffer::RingBuffer;
 
     #[test]
     fn test_none_on_init() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         let expected_none = ringbuffer.read();
         
         assert_eq!(None, expected_none);
@@ -15,7 +16,7 @@ mod tests {
     #[test]
     fn test_add_1_item_1() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         
         let expected_value: u64 = 5;
         ringbuffer.write(expected_value);
@@ -30,7 +31,7 @@ mod tests {
     #[test]
     fn test_add_1_item_2() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         
         let expected_value: u64 = 7;
         ringbuffer.write(expected_value);
@@ -45,7 +46,7 @@ mod tests {
     #[test]
     fn test_add_2_items_1() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         
         let expected_value1: u64 = 5;
         let expected_value2: u64 = 7;
@@ -67,7 +68,7 @@ mod tests {
     #[test]
     fn test_add_2_items_2() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         
         let expected_value1: u64 = 89;
         let expected_value2: u64 = 21;
@@ -89,7 +90,7 @@ mod tests {
     #[test]
     fn test_add_2_items_remove_add_item_1() {
         let mut buffer: [u64; 512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
         
         let expected_value1: u64 = 5;
         let expected_value2: u64 = 7;
@@ -115,7 +116,7 @@ mod tests {
     #[test]
     fn test_max_capacity() {
         let mut buffer: [u64;512] = [0;512];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
 
         for i in 0..511u64 {
             let response = ringbuffer.write(i);
@@ -130,7 +131,7 @@ mod tests {
     #[test]
     fn test_max_capacity2() {
         let mut buffer: [u64;1024] = [0;1024];
-        let mut ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 8192) };
+        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 8192) };
 
         for i in 0..1023u64 {
             let response = ringbuffer.write(i);
@@ -143,7 +144,7 @@ mod tests {
     }
 
     static mut BUFFER_ARRAY: [u64;512] = [0;512];
-    static mut RING_BUFFER: RingBuffer<u64> = unsafe { RingBuffer::new(BUFFER_ARRAY.as_mut_ptr(), 4096) };
+    static RING_BUFFER: RingBuffer<u64> = unsafe { RingBuffer::new_uninit() };
     static mut VEC1: std::vec::Vec<u64> = Vec::new();
     static mut VEC2: std::vec::Vec<u64> = Vec::new();
     static mut VEC3: std::vec::Vec<u64> = Vec::new();
@@ -153,25 +154,25 @@ mod tests {
 
     #[test]
     pub fn test_threaded_access() {
-        unsafe { RING_BUFFER = RingBuffer::new(BUFFER_ARRAY.as_mut_ptr(), 4096) };
+        unsafe { RING_BUFFER.init(BUFFER_ARRAY.as_mut_ptr(), 4096) };
 
         let t1 = std::thread::spawn(move || {
-            let mut vec = test_buffer(0, 512, 10000);
+            let mut vec = test_buffer(0, 512, 100000);
             unsafe {VEC1.append( &mut vec);}
         });
 
         let t2 = std::thread::spawn(move || {
-            let mut vec = test_buffer(512, 512, 10000);
+            let mut vec = test_buffer(512, 512, 100000);
             unsafe {VEC2.append( &mut vec);}
         });
 
         let t3 = std::thread::spawn(move || {
-            let mut vec = test_buffer(1024, 512, 10000);
+            let mut vec = test_buffer(1024, 512, 100000);
             unsafe {VEC3.append( &mut vec);}
         });
 
         let t4 = std::thread::spawn(move || {
-            let mut vec = test_buffer(1536, 512, 10000);
+            let mut vec = test_buffer(1536, 512, 100000);
             unsafe {VEC4.append(&mut vec);}
         });
 
@@ -215,29 +216,29 @@ mod tests {
             if vec.len() > 0 {
                 let index = rand::thread_rng().gen_range(0..vec.len());
                 let val = vec.remove(index);
-                let result = unsafe { RING_BUFFER.write(val) };
+                let result = RING_BUFFER.write(val);
 
                 if result.is_none() {
                     vec.push(val);
-                    match unsafe { RING_BUFFER.read() } {
+                    match RING_BUFFER.read() {
                         Some(val) => {vec.push(val); },
                         _ => {},
                     }
-                    match unsafe { RING_BUFFER.read() } {
+                    match RING_BUFFER.read() {
                         Some(val) => {vec.push(val); },
                         _ => {},
                     }
-                    match unsafe { RING_BUFFER.read() } {
+                    match RING_BUFFER.read() {
                         Some(val) => {vec.push(val); },
                         _ => {},
                     }
-                    match unsafe { RING_BUFFER.read() } {
+                    match RING_BUFFER.read() {
                         Some(val) => {vec.push(val); },
                         _ => {},
                     }
                 }
             } else {
-                match unsafe { RING_BUFFER.read() } {
+                match RING_BUFFER.read() {
                     Some(val) => {vec.push(val); },
                     _ => {},
                 }

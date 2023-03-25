@@ -9,7 +9,7 @@ pub struct RingBuffer<T: Copy> {
 }
 
 impl<T: Copy> RingBuffer<T> {
-    pub unsafe fn new(buffer: *mut T, mem_size: usize) -> RingBuffer<T> {
+    pub const unsafe fn new(buffer: *mut T, mem_size: usize) -> RingBuffer<T> {
         let buffer_size: usize = mem_size / core::mem::size_of::<T>();
         return RingBuffer {
             buffer: buffer,
@@ -89,16 +89,17 @@ impl<T: Copy> RingBuffer<T> {
 
     pub fn write(&mut self, item: T) -> Option<u16> {
         loop {
+            let cur_write_pos = self.write_pos;
             if self.is_full() {
                 return None;
             }
 
-            let mut new_write_pos = self.write_pos + 1;
+            let mut new_write_pos = cur_write_pos + 1;
             if new_write_pos == self.buffer_size as u16 {
                 new_write_pos = 0;
             }
 
-            let cas_result = self.atom_write_post.compare_exchange(self.write_pos, new_write_pos, Ordering::Relaxed, Ordering::Relaxed);
+            let cas_result = self.atom_write_post.compare_exchange(cur_write_pos, new_write_pos, Ordering::Relaxed, Ordering::Relaxed);
 
             if cas_result.is_ok() {
                 self.set_val(self.write_pos, item);

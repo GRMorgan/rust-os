@@ -4,8 +4,7 @@ mod tests {
 
     #[test]
     fn test_none_on_init() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         let expected_none = ringbuffer.read();
         
         assert_eq!(None, expected_none);
@@ -15,8 +14,7 @@ mod tests {
 
     #[test]
     fn test_add_1_item_1() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         
         let expected_value: u64 = 5;
         ringbuffer.write(expected_value);
@@ -30,8 +28,7 @@ mod tests {
 
     #[test]
     fn test_add_1_item_2() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         
         let expected_value: u64 = 7;
         ringbuffer.write(expected_value);
@@ -45,8 +42,7 @@ mod tests {
 
     #[test]
     fn test_add_2_items_1() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         
         let expected_value1: u64 = 5;
         let expected_value2: u64 = 7;
@@ -67,8 +63,7 @@ mod tests {
 
     #[test]
     fn test_add_2_items_2() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         
         let expected_value1: u64 = 89;
         let expected_value2: u64 = 21;
@@ -89,8 +84,7 @@ mod tests {
 
     #[test]
     fn test_add_2_items_remove_add_item_1() {
-        let mut buffer: [u64; 512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
         
         let expected_value1: u64 = 5;
         let expected_value2: u64 = 7;
@@ -115,8 +109,7 @@ mod tests {
 
     #[test]
     fn test_max_capacity() {
-        let mut buffer: [u64;512] = [0;512];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 4096) };
+        let ringbuffer = RingBuffer::<u64,512>::new(0);
 
         for i in 0..511u64 {
             let response = ringbuffer.write(i);
@@ -130,8 +123,7 @@ mod tests {
 
     #[test]
     fn test_max_capacity2() {
-        let mut buffer: [u64;1024] = [0;1024];
-        let ringbuffer = unsafe { RingBuffer::new(buffer.as_mut_ptr(), 8192) };
+        let ringbuffer = RingBuffer::<u64,1024>::new(0);
 
         for i in 0..1023u64 {
             let response = ringbuffer.write(i);
@@ -143,8 +135,7 @@ mod tests {
         assert_eq!(None, response);
     }
 
-    static mut BUFFER_ARRAY: [u64;512] = [0;512];
-    static RING_BUFFER: RingBuffer<u64> = unsafe { RingBuffer::new_uninit() };
+    static RING_BUFFER: RingBuffer<u64, 512> = RingBuffer::new(0);
     static mut VEC1: std::vec::Vec<u64> = Vec::new();
     static mut VEC2: std::vec::Vec<u64> = Vec::new();
     static mut VEC3: std::vec::Vec<u64> = Vec::new();
@@ -154,8 +145,6 @@ mod tests {
 
     #[test]
     pub fn test_threaded_access() {
-        unsafe { RING_BUFFER.init(BUFFER_ARRAY.as_mut_ptr(), 4096) };
-
         let t1 = std::thread::spawn(move || {
             let mut vec = test_buffer(0, 512, 100000);
             unsafe {VEC1.append( &mut vec);}

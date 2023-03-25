@@ -2,7 +2,7 @@ use core::{sync::atomic::{AtomicU16, Ordering}, cell::UnsafeCell};
 
 pub struct RingBuffer<T: Copy, const N: usize> {
     buffer: UnsafeCell<[T;N]>,
-    buffer_size: UnsafeCell<usize>,
+    buffer_size: usize,
     read_pos: AtomicU16,
     write_pos: UnsafeCell<u16>,
     atom_write_post: AtomicU16,
@@ -15,7 +15,7 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
     pub const fn new(init_value: T) -> RingBuffer<T,N> {
         return RingBuffer {
             buffer: UnsafeCell::new([init_value;N]),
-            buffer_size: UnsafeCell::new(N),
+            buffer_size: N,
             read_pos: AtomicU16::new(0),
             write_pos: UnsafeCell::new(0),
             atom_write_post: AtomicU16::new(0),
@@ -29,7 +29,7 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
     pub fn is_full(&self) -> bool {
         let mut read_pos = self.read_pos.load(Ordering::Relaxed);
         if read_pos == 0 {
-            read_pos = self.buffer_size() as u16;
+            read_pos = self.buffer_size as u16;
         }
 
         return self.write_pos() + 1 == read_pos;
@@ -40,14 +40,14 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
         let read_pos = self.read_pos.load(Ordering::Relaxed);
         let mut write_pos = self.write_pos();
         if read_pos > write_pos {
-            write_pos += self.buffer_size() as u16;
+            write_pos += self.buffer_size as u16;
         }
         return write_pos - read_pos;
     }
 
     #[inline]
     pub fn max_items(&self) -> u16 {
-        return self.buffer_size() as u16 - 1;
+        return self.buffer_size as u16 - 1;
     }
 
     #[inline]
@@ -58,11 +58,6 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
     #[inline]
     fn write_pos(&self) -> u16 {
         unsafe{ *self.write_pos.get() }
-    }
-
-    #[inline]
-    fn buffer_size(&self) -> usize {
-        unsafe { return *self.buffer_size.get(); }
     }
 
     fn read_val(&self, pos: usize) -> T {
@@ -88,7 +83,7 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
             let read_pos = self.read_pos.load(Ordering::Relaxed);
             let output = self.read_val(read_pos as usize);
             let mut new_read_pos = read_pos + 1;
-            if new_read_pos == self.buffer_size() as u16 {
+            if new_read_pos == self.buffer_size as u16 {
                 new_read_pos = 0;
             }
             let cas_result = self.read_pos.compare_exchange(read_pos, new_read_pos, Ordering::Relaxed, Ordering::Relaxed);
@@ -107,7 +102,7 @@ impl<T: Copy, const N: usize> RingBuffer<T,N> {
             }
 
             let mut new_write_pos = cur_write_pos + 1;
-            if new_write_pos == self.buffer_size() as u16 {
+            if new_write_pos == self.buffer_size as u16 {
                 new_write_pos = 0;
             }
 

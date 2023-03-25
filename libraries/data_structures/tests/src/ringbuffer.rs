@@ -136,11 +136,6 @@ mod tests {
     }
 
     static RING_BUFFER: RingBuffer<u64, 512> = RingBuffer::new(0);
-    static mut VEC1: std::vec::Vec<u64> = Vec::new();
-    static mut VEC2: std::vec::Vec<u64> = Vec::new();
-    static mut VEC3: std::vec::Vec<u64> = Vec::new();
-    static mut VEC4: std::vec::Vec<u64> = Vec::new();
-
     use rand::Rng;
 
     const ITER_COUNT: usize = 100000;
@@ -178,43 +173,37 @@ mod tests {
             return vec;
         }
         let t1 = std::thread::spawn(move || {
-            let mut vec = task(0, 512, ITER_COUNT);
-            unsafe {VEC1.append(&mut vec);}
+            return task(0, 512, ITER_COUNT);
         });
 
         let t2 = std::thread::spawn(move || {
-            let mut vec = task(512, 512, ITER_COUNT);
-            unsafe {VEC2.append(&mut vec);}
+            return task(512, 512, ITER_COUNT);
         });
 
         let t3 = std::thread::spawn(move || {
-            let mut vec = task(1024, 512, ITER_COUNT);
-            unsafe {VEC3.append(&mut vec);}
+            return task(1024, 512, ITER_COUNT);
         });
 
         let t4 = std::thread::spawn(move || {
-            let mut vec = task(1536, 512, ITER_COUNT);
-            unsafe {VEC4.append(&mut vec);}
+            return task(1536, 512, ITER_COUNT);
         });
 
-        t1.join().unwrap();
-        t2.join().unwrap();
-        t3.join().unwrap();
-        t4.join().unwrap();
+        let mut vec1 = t1.join().unwrap();
+        let mut vec2 = t2.join().unwrap();
+        let mut vec3 = t3.join().unwrap();
+        let mut vec4 = t4.join().unwrap();
 
         let mut vec_test: std::vec::Vec<u64> = Vec::new();
-        unsafe { 
-            vec_test.append(&mut VEC1);
-            vec_test.append(&mut VEC2);
-            vec_test.append(&mut VEC3);
-            vec_test.append(&mut VEC4);
+        vec_test.append(&mut vec1);
+        vec_test.append(&mut vec2);
+        vec_test.append(&mut vec3);
+        vec_test.append(&mut vec4);
 
-            assert_eq!(false, RING_BUFFER.is_empty());
-            while !RING_BUFFER.is_empty() {
-                match RING_BUFFER.read() {
-                    Some(val) => { vec_test.push(val); }
-                    _ => {}
-                }
+        assert_eq!(false, RING_BUFFER.is_empty());
+        while !RING_BUFFER.is_empty() {
+            match RING_BUFFER.read() {
+                Some(val) => { vec_test.push(val); }
+                _ => {}
             }
         }
 
@@ -229,10 +218,6 @@ mod tests {
     
 
     static RING_BUFFER2: RingBuffer<u64, 2048> = RingBuffer::new(0);
-    static mut VEC2_1: std::vec::Vec<u64> = Vec::new();
-    static mut VEC2_2: std::vec::Vec<u64> = Vec::new();
-    static mut VEC2_3: std::vec::Vec<u64> = Vec::new();
-    static mut VEC2_4: std::vec::Vec<u64> = Vec::new();
 
     const ITER_COUNT2: usize = 100000;
     #[test]
@@ -267,44 +252,38 @@ mod tests {
             return vec;
         }
         let t1 = std::thread::spawn(move || {
-            let mut vec = task(ITER_COUNT2);
-            unsafe {VEC2_1.append(&mut vec);}
+            return task(ITER_COUNT2);
         });
 
         let t2 = std::thread::spawn(move || {
-            let mut vec = task(ITER_COUNT2);
-            unsafe {VEC2_2.append(&mut vec);}
+            return task(ITER_COUNT2);
         });
 
         let t3 = std::thread::spawn(move || {
-            let mut vec = task(ITER_COUNT2);
-            unsafe {VEC2_3.append(&mut vec);}
+            return task(ITER_COUNT2);
         });
 
         let t4 = std::thread::spawn(move || {
-            let mut vec = task(ITER_COUNT2);
-            unsafe {VEC2_4.append(&mut vec);}
+            return task(ITER_COUNT2);
         });
 
-        t1.join().unwrap();
-        t2.join().unwrap();
-        t3.join().unwrap();
-        t4.join().unwrap();
+        let mut vec1 = t1.join().unwrap();
+        let mut vec2 = t2.join().unwrap();
+        let mut vec3 = t3.join().unwrap();
+        let mut vec4 = t4.join().unwrap();
 
         let mut vec_test: std::vec::Vec<u64> = Vec::new();
-        unsafe { 
-            vec_test.append(&mut VEC2_1);
-            vec_test.append(&mut VEC2_2);
-            vec_test.append(&mut VEC2_3);
-            vec_test.append(&mut VEC2_4);
+         vec_test.append(&mut vec1);
+         vec_test.append(&mut vec2);
+         vec_test.append(&mut vec3);
+         vec_test.append(&mut vec4);
 
-            while !RING_BUFFER2.is_empty() {
-                match RING_BUFFER2.read() {
-                    Some(val) => { vec_test.push(val); }
-                    _ => {}
-                }
-            }
-        }
+         while !RING_BUFFER2.is_empty() {
+             match RING_BUFFER2.read() {
+                 Some(val) => { vec_test.push(val); }
+                 _ => {}
+             }
+         }
 
         vec_test.sort();
         

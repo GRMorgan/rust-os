@@ -2,7 +2,7 @@ use x86_64_hardware::memory::paging::{PageFrameAllocator, PageTableManager};
 use x86_64_hardware::{com1_println, devices::uart_16550::COM1};
 use x86_64_hardware::tables::*;
 
-use crate::temp_allocator::{TEMP_ALLOC, get_temp_allocator};
+use crate::memory::{TEMP_ALLOC, get_temp_allocator};
 
 
 #[panic_handler]

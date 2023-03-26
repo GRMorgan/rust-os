@@ -1,10 +1,5 @@
 ## Memory Management
 
-### Setup Temporary Bitmap Physical Memory Manager
-
-This needs to exist until the main PMM server is running. For now it is
-basically a permanent component until we implement that server.
-
 ### Implement Kernel Physical Frame Allocator
 
 A simple frame allocator that uses a ring buffer to service the memory

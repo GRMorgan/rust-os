@@ -17,7 +17,17 @@ pub struct PageFrameAllocator {
 }
 
 impl PageFrameAllocator {
-    pub unsafe fn new_from_bitmap(page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64,) -> PageFrameAllocator {
+    pub const unsafe fn new_uninit() -> PageFrameAllocator {
+        PageFrameAllocator { 
+            page_bitmap: bitmap::Bitmap::new_uninit(),
+            free_memory: 0,
+            reserved_memory: 0,
+            used_memory: 0,
+            last_allocated_page: 0, 
+        }
+    }
+
+    pub unsafe fn new_from_bitmap(page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64) -> PageFrameAllocator {
         PageFrameAllocator{
             page_bitmap: *page_bitmap,
             free_memory: free_memory,
@@ -25,6 +35,14 @@ impl PageFrameAllocator {
             used_memory: used_memory,
             last_allocated_page: 0,
         }
+    }
+
+    pub unsafe fn init(&mut self, page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64) {
+        self.page_bitmap = *page_bitmap;
+        self.free_memory = free_memory;
+        self.reserved_memory = reserved_memory;
+        self.used_memory = used_memory;
+        self.last_allocated_page = 0;
     }
 
     pub fn free_pages(&mut self, address: PhysicalAddress, page_count: usize) {

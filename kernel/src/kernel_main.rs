@@ -2,6 +2,8 @@ use x86_64_hardware::memory::paging::{PageFrameAllocator, PageTableManager};
 use x86_64_hardware::{com1_println, devices::uart_16550::COM1};
 use x86_64_hardware::tables::*;
 
+use crate::temp_allocator::{TEMP_ALLOC, get_temp_allocator};
+
 
 #[panic_handler]
 fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
@@ -23,7 +25,8 @@ pub extern "C" fn kernel_main(bootinfo: *mut bootinfo::BootInfo) {
 
     let meminfo = unsafe { (*bootinfo).meminfo.move_out() };
 
-    let mut allocator =  unsafe { PageFrameAllocator::new_from_bitmap(&meminfo.bitmap, meminfo.free_memory, meminfo.reserved_memory, meminfo.used_memory) };
+    unsafe { TEMP_ALLOC.lock().init(&meminfo.bitmap, meminfo.free_memory, meminfo.reserved_memory, meminfo.used_memory) };
+    let mut allocator =  get_temp_allocator();
 
     let page_table_manager = PageTableManager::new_from_cr3(unsafe { (*bootinfo).page_table_memory_offset});
     for index in 0..255usize {

@@ -30,6 +30,7 @@ version = "0.1.0"
 dependencies = [
  "bootinfo",
  "data_structures",
+ "spin",
  "x86_64_hardware",
 ]
 

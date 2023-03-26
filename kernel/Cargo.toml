@@ -12,3 +12,4 @@ crate-type = ["staticlib"]
 bootinfo = { path = "../libraries/bootinfo" }
 x86_64_hardware = { path = "../libraries/x86_64_hardware" }
 data_structures = { path = "../libraries/data_structures" }
+spin = "0.9.6"

@@ -6,6 +6,13 @@ pub struct Bitmap {
 }
 
 impl Bitmap {
+    pub const unsafe fn new_uninit() -> Bitmap {
+        return Bitmap { 
+            size: 0,
+            buffer: core::ptr::null_mut::<BitmapByte>(),
+        };
+    }
+
     //This is unsafe as it is possible to pass invalid values to the constructor.
     //It is the responsibility of the caller to ensure this is safe.
     pub unsafe fn new(size: usize, buffer: *mut u8) -> Bitmap {
@@ -97,6 +104,8 @@ impl Bitmap {
         }
     }
 }
+
+unsafe impl Send for Bitmap {}
 
 #[repr(transparent)]
 struct BitmapByte {

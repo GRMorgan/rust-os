@@ -204,7 +204,7 @@ impl PageTableManager {
         return Some(page_table_entry.address());
     }
 
-    pub fn unmap_p4_index(&self, p4_index: usize, allocator: &mut impl FrameAllocator) {
+    pub fn unmap_p4_index(&self, p4_index: usize, allocator: & impl FrameAllocator) {
         //We could error here but honestly doing nothing is just fine. Technically the index is completely unmapped
         if p4_index > PAGE_TABLE_MAX_INDEX {
             return;
@@ -224,7 +224,7 @@ impl PageTableManager {
         }
     }
 
-    fn unmap_p3(&self, p3_ptr: *mut PageTable, allocator: &mut impl FrameAllocator) {
+    fn unmap_p3(&self, p3_ptr: *mut PageTable, allocator: & impl FrameAllocator) {
         for index in 0..PAGE_TABLE_MAX_INDEX {
             let mut p3_entry = unsafe { (*p3_ptr).get_entry(index) };
 
@@ -244,7 +244,7 @@ impl PageTableManager {
         }
     }
 
-    fn unmap_p2(&self, p2_ptr: *mut PageTable, allocator: &mut impl FrameAllocator) {
+    fn unmap_p2(&self, p2_ptr: *mut PageTable, allocator: & impl FrameAllocator) {
         for index in 0..PAGE_TABLE_MAX_INDEX {
             let mut p2_entry = unsafe { (*p2_ptr).get_entry(index) };
 

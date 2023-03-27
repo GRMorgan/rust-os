@@ -1,12 +1,5 @@
 ## Memory Management
 
-### Implement Kernel Physical Frame Allocator
-
-A simple frame allocator that uses a ring buffer to service the memory
-requirements of creating the page tables (but not necessarily the actual pages)
-and the kernel heap. This will delegate to the PMM via a set of function
-pointers that will initially point to the temp bitmap
-
 ### Implement Kernel Heap
 
 This will need to be initialised with enough memory to get the VMM running.

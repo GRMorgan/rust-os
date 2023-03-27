@@ -109,15 +109,15 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     bootinfo = unsafe { bootinfo_virtual_address.get_mut_ptr::<BootInfo>() };
 
     //Map bitmap into kernel space
-    let num_bitmap_pages = (allocator.page_bitmap.size() as u64 + PAGE_SIZE - 1) / PAGE_SIZE;
-    let bitmap_buffer_physical_addr = PhysicalAddress::new(unsafe { allocator.page_bitmap.get_buffer() as u64 });
+    let num_bitmap_pages = (allocator.page_bitmap().size() as u64 + PAGE_SIZE - 1) / PAGE_SIZE;
+    let bitmap_buffer_physical_addr = PhysicalAddress::new(unsafe { allocator.page_bitmap().get_buffer() as u64 });
     let bitmap_buffer_virtual_addr = unsafe { (*bootinfo).next_available_kernel_page };
     page_table_manager.map_memory_pages(bitmap_buffer_virtual_addr, bitmap_buffer_physical_addr, num_bitmap_pages, &mut allocator);
     unsafe { (*bootinfo).next_available_kernel_page = bitmap_buffer_virtual_addr.increment_page_4kb(num_bitmap_pages as u64); }
 
     unsafe { page_table_manager.activate_page_table(); }
     //Update the bitmap to use the new location in kernel space
-    unsafe { allocator.page_bitmap.set_buffer(bitmap_buffer_virtual_addr.get_mut_ptr::<u8>()); }
+    unsafe { allocator.page_bitmap().set_buffer(bitmap_buffer_virtual_addr.get_mut_ptr::<u8>()); }
     unsafe {  (*bootinfo).meminfo = MemInfo::new_from_allocator(&mut allocator, max_physical_address); }
 
     let kernel_start: unsafe extern "sysv64" fn(*mut BootInfo) = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };

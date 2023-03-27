@@ -7,7 +7,7 @@ pub struct PhysicalAddress(u64);
 
 impl PhysicalAddress {
     #[inline]
-    pub fn new(addr: u64) -> PhysicalAddress {
+    pub const fn new(addr: u64) -> PhysicalAddress {
         return PhysicalAddress(addr & PHYSICAL_ADDRESS_MASK);
     }
 

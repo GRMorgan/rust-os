@@ -1,14 +1,15 @@
 use bitmap;
+use spin::Mutex;
 use crate::memory::{PAGE_SIZE,PhysicalAddress};
 
 
 pub trait FrameAllocator {
-    fn request_page(&mut self) -> PhysicalAddress;
+    fn request_page(&self) -> PhysicalAddress;
 
-    fn free_page(&mut self, address: PhysicalAddress);
+    fn free_page(&self, address: PhysicalAddress);
 }
 
-pub struct PageFrameAllocator {
+struct PageFrameAllocatorInner {
     pub page_bitmap: bitmap::Bitmap,
     free_memory: u64,
     reserved_memory: u64,
@@ -16,24 +17,14 @@ pub struct PageFrameAllocator {
     last_allocated_page: usize,
 }
 
-impl PageFrameAllocator {
-    pub const unsafe fn new_uninit() -> PageFrameAllocator {
-        PageFrameAllocator { 
+impl PageFrameAllocatorInner {
+    pub const unsafe fn new_uninit() -> PageFrameAllocatorInner {
+        PageFrameAllocatorInner { 
             page_bitmap: bitmap::Bitmap::new_uninit(),
             free_memory: 0,
             reserved_memory: 0,
             used_memory: 0,
             last_allocated_page: 0, 
-        }
-    }
-
-    pub unsafe fn new_from_bitmap(page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64) -> PageFrameAllocator {
-        PageFrameAllocator{
-            page_bitmap: *page_bitmap,
-            free_memory: free_memory,
-            reserved_memory: reserved_memory,
-            used_memory: used_memory,
-            last_allocated_page: 0,
         }
     }
 
@@ -110,20 +101,6 @@ impl PageFrameAllocator {
         }
     }
 
-    pub fn get_free_ram(&self) -> u64 {
-        return self.free_memory;
-    }
-
-    pub fn get_used_ram(&self) -> u64 {
-        return self.used_memory;
-    }
-
-    pub fn get_reserved_ram(&self) -> u64 {
-        return self.reserved_memory;
-    }
-}
-
-impl FrameAllocator for PageFrameAllocator {
     fn request_page(&mut self) -> PhysicalAddress {
         for index in self.last_allocated_page..self.page_bitmap.size() * 8 {
             if !self.page_bitmap.get(index) {
@@ -150,5 +127,79 @@ impl FrameAllocator for PageFrameAllocator {
                 }
             }
         }
+    }
+}
+
+pub struct PageFrameAllocator {
+    lockable_allocator: Mutex<PageFrameAllocatorInner>,
+}
+
+impl PageFrameAllocator {
+    pub unsafe fn new_from_bitmap(page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64) -> PageFrameAllocator {
+        return PageFrameAllocator::new(PageFrameAllocatorInner{
+            page_bitmap: *page_bitmap,
+            free_memory: free_memory,
+            reserved_memory: reserved_memory,
+            used_memory: used_memory,
+            last_allocated_page: 0,
+        });
+    }
+
+    const fn new(inner: PageFrameAllocatorInner) -> PageFrameAllocator {
+        PageFrameAllocator { lockable_allocator: Mutex::new(inner) }
+    }
+
+    pub const fn new_uninit() -> PageFrameAllocator {
+        return PageFrameAllocator::new(unsafe { PageFrameAllocatorInner::new_uninit() });
+    }
+
+    pub unsafe fn init(&self, page_bitmap: &bitmap::Bitmap, free_memory: u64, reserved_memory: u64, used_memory: u64) {
+        self.lockable_allocator.lock().init(page_bitmap, free_memory, reserved_memory, used_memory);
+    }
+
+    pub fn page_bitmap(&self) -> bitmap::Bitmap {
+        return self.lockable_allocator.lock().page_bitmap;
+    }
+
+    pub fn get_free_ram(&self) -> u64 {
+        return self.lockable_allocator.lock().free_memory;
+    }
+
+    pub fn get_used_ram(&self) -> u64 {
+        return self.lockable_allocator.lock().used_memory;
+    }
+
+    pub fn get_reserved_ram(&self) -> u64 {
+        return self.lockable_allocator.lock().reserved_memory;
+    }
+
+    pub fn free_pages(&self, address: PhysicalAddress, page_count: usize) {
+        self.lockable_allocator.lock().free_pages(address, page_count);
+    }
+
+    pub fn lock_page(&self, address: PhysicalAddress) {
+        self.lockable_allocator.lock().lock_page(address);
+    }
+
+    pub fn lock_pages(&self, address: PhysicalAddress, page_count: usize) {
+        self.lockable_allocator.lock().lock_pages(address, page_count);
+    }
+
+    pub fn unreserve_page(&self, address: PhysicalAddress) {
+        self.lockable_allocator.lock().unreserve_page(address);
+    }
+
+    pub fn unreserve_pages(&self, address: PhysicalAddress, page_count: usize) {
+        self.lockable_allocator.lock().unreserve_pages(address, page_count);
+    }
+}
+
+impl FrameAllocator for PageFrameAllocator {
+    fn request_page(&self) -> PhysicalAddress {
+        return self.lockable_allocator.lock().request_page();
+    }
+
+    fn free_page(&self, address: PhysicalAddress) {
+        return self.lockable_allocator.lock().free_page(address);
     }
 }

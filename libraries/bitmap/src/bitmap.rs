@@ -43,7 +43,7 @@ impl Bitmap {
         let buffer_index = (index / 8) as isize;
         let bit_index = index % 8;
 
-        if buffer_index as usize >= self.size { 
+        if buffer_index as usize >= self.size {
             return false; 
         } else {
             unsafe {

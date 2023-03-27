@@ -11,7 +11,7 @@ pub struct MemInfo {
 impl MemInfo {
     pub fn new_from_allocator(allocator: &mut PageFrameAllocator, max_physical_address: PhysicalAddress) -> MemInfo {
         MemInfo {
-            bitmap: allocator.page_bitmap,
+            bitmap: allocator.page_bitmap(),
             free_memory: allocator.get_free_ram(),
             reserved_memory: allocator.get_reserved_ram(),
             used_memory: allocator.get_used_ram(),

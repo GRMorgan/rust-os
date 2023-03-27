@@ -79,7 +79,7 @@ impl LoadedAssetList {
         }
     }
 
-    pub fn lock_list_pages(&self, allocator: &mut PageFrameAllocator) {
+    pub fn lock_list_pages(&self, allocator: &PageFrameAllocator) {
         allocator.lock_pages(PhysicalAddress::new(self.list_ptr as u64), self.num_pages);
     }
 }

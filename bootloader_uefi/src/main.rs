@@ -116,9 +116,9 @@ fn main(h: efi::Handle, system_table: uefi::SystemTableWrapper) -> Result<(),efi
     unsafe { (*bootinfo).next_available_kernel_page = bitmap_buffer_virtual_addr.increment_page_4kb(num_bitmap_pages as u64); }
 
     unsafe { page_table_manager.activate_page_table(); }
-    //Update the bitmap to use the new location in kernel space
-    unsafe { allocator.page_bitmap().set_buffer(bitmap_buffer_virtual_addr.get_mut_ptr::<u8>()); }
-    unsafe {  (*bootinfo).meminfo = MemInfo::new_from_allocator(&mut allocator, max_physical_address); }
+    //Pass new kernel space bitmap location to kernel
+    let output_bitmap = unsafe { bitmap::Bitmap::new(allocator.page_bitmap().size(), bitmap_buffer_virtual_addr.get_mut_ptr::<u8>()) };
+    unsafe {  (*bootinfo).meminfo = MemInfo::new(output_bitmap, allocator.get_free_ram(), allocator.get_reserved_ram(), allocator.get_used_ram(), max_physical_address); }
 
     let kernel_start: unsafe extern "sysv64" fn(*mut BootInfo) = unsafe { core::mem::transmute(entry_point.get_mut_ptr::<core::ffi::c_void>()) };
     unsafe { (kernel_start)(bootinfo) };

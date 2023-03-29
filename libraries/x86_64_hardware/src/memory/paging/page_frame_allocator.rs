@@ -36,12 +36,6 @@ impl PageFrameAllocatorInner {
         self.last_allocated_page = 0;
     }
 
-    pub fn free_pages(&mut self, address: PhysicalAddress, page_count: usize) {
-        for i in 0..page_count {
-            self.free_page(address.increment_page_4kb(i as u64));
-        }
-    }
-
     pub fn lock_page(&mut self, address: PhysicalAddress) {
         let page_number = address.as_usize() / PAGE_SIZE as usize;
         if self.page_bitmap.get(page_number) {
@@ -51,12 +45,6 @@ impl PageFrameAllocatorInner {
                 self.free_memory -= PAGE_SIZE;
                 self.used_memory += PAGE_SIZE;
             }
-        }
-    }
-
-    pub fn lock_pages(&mut self, address: PhysicalAddress, page_count: usize) {
-        for i in 0..page_count {
-            self.lock_page(address.increment_page_4kb(i as u64));
         }
     }
 
@@ -72,12 +60,6 @@ impl PageFrameAllocatorInner {
                     self.last_allocated_page = page_number;
                 }
             }
-        }
-    }
-
-    pub fn unreserve_pages(&mut self, address: PhysicalAddress, page_count: usize) {
-        for i in 0..page_count {
-            self.unreserve_page(address.increment_page_4kb(i as u64));
         }
     }
 
@@ -174,7 +156,10 @@ impl PageFrameAllocator {
     }
 
     pub fn free_pages(&self, address: PhysicalAddress, page_count: usize) {
-        self.lockable_allocator.lock().free_pages(address, page_count);
+        let mut inner = self.lockable_allocator.lock();
+        for i in 0..page_count {
+            inner.free_page(address.increment_page_4kb(i as u64));
+        }
     }
 
     pub fn lock_page(&self, address: PhysicalAddress) {
@@ -182,7 +167,10 @@ impl PageFrameAllocator {
     }
 
     pub fn lock_pages(&self, address: PhysicalAddress, page_count: usize) {
-        self.lockable_allocator.lock().lock_pages(address, page_count);
+        let mut inner = self.lockable_allocator.lock();
+        for i in 0..page_count {
+            inner.lock_page(address.increment_page_4kb(i as u64));
+        }
     }
 
     pub fn unreserve_page(&self, address: PhysicalAddress) {
@@ -190,7 +178,10 @@ impl PageFrameAllocator {
     }
 
     pub fn unreserve_pages(&self, address: PhysicalAddress, page_count: usize) {
-        self.lockable_allocator.lock().unreserve_pages(address, page_count);
+        let mut inner = self.lockable_allocator.lock();
+        for i in 0..page_count {
+            inner.unreserve_page(address.increment_page_4kb(i as u64));
+        }
     }
 }
 

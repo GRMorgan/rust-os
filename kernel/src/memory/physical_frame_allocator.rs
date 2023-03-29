@@ -30,6 +30,7 @@ impl PhysicalFrameAllocator {
             fill_lock: Mutex::new(()),
         }
     }
+    
     pub const fn new_uninit() -> PhysicalFrameAllocator {
         PhysicalFrameAllocator { 
             buffer: RingBuffer::new(PhysicalAddress::new(0)),

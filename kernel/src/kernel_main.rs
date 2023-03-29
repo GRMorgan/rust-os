@@ -1,4 +1,4 @@
-use x86_64_hardware::memory::paging::{PageTableManager, FrameAllocator};
+use x86_64_hardware::memory::paging::PageTableManager;
 use x86_64_hardware::{com1_println, devices::uart_16550::COM1};
 use x86_64_hardware::tables::*;
 
@@ -27,8 +27,7 @@ pub extern "C" fn kernel_main(bootinfo: *mut bootinfo::BootInfo) {
 
     unsafe { TEMP_ALLOC.init(&meminfo.bitmap, meminfo.free_memory, meminfo.reserved_memory, meminfo.used_memory) };
     FRAME_ALLOCATOR.set_mem_manager(get_pmm_functions());
-    //TODO - Kernel crashes if we don't pre-allocate this buffer. We need to investigate this because it shouldn't crash
-    FRAME_ALLOCATOR.fill_buffer();
+
 
     let page_table_manager = PageTableManager::new_from_cr3(unsafe { (*bootinfo).page_table_memory_offset});
     for index in 0..255usize {

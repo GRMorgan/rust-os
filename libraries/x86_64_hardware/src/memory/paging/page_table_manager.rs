@@ -46,6 +46,10 @@ impl PageTableManager {
         unsafe { return &(*p4_ptr); }
     }
 
+    pub fn get_p4_address(&self) -> PhysicalAddress {
+        return self.p4;
+    }
+
     pub fn release_tables(&self, allocator: &mut impl FrameAllocator) {
         for index in 0..511usize {
             self.unmap_p4_index(index, allocator)
@@ -82,7 +86,7 @@ impl PageTableManager {
         }
     }
 
-    pub fn map_memory(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) {
+    pub fn map_memory(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) {
         let p4_ptr = unsafe { self.translate_address(self.p4).get_mut_ptr::<PageTable>() };
 
         let mut p4_table_entry = unsafe { (*p4_ptr).table[virtual_addr.p4_index()] };
@@ -99,7 +103,7 @@ impl PageTableManager {
         }
     }
 
-    fn create_and_map_p3(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) -> PhysicalAddress {
+    fn create_and_map_p3(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) -> PhysicalAddress {
         let output = allocator.request_page();
         let p3_ptr = unsafe { self.translate_address(output).get_mut_ptr::<PageTable>() };
         unsafe { (*p3_ptr).make_unused() }
@@ -108,7 +112,7 @@ impl PageTableManager {
         return output;
     }
 
-    fn map_p3(&self, p3_ptr: *mut PageTable, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) {
+    fn map_p3(&self, p3_ptr: *mut PageTable, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) {
         let mut p3_table_entry = unsafe { (*p3_ptr).table[virtual_addr.p3_index()] };
         if !p3_table_entry.present() {
             let p2_addr = self.create_and_map_p2(virtual_addr, physical_addr, allocator);
@@ -122,7 +126,7 @@ impl PageTableManager {
         }
     }
 
-    fn create_and_map_p2(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) -> PhysicalAddress {
+    fn create_and_map_p2(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) -> PhysicalAddress {
         let output = allocator.request_page();
         let p2_ptr = unsafe { self.translate_address(output).get_mut_ptr::<PageTable>() };
         unsafe { (*p2_ptr).make_unused() }
@@ -131,7 +135,7 @@ impl PageTableManager {
         return output;
     }
 
-    fn map_p2(&self, p2_ptr: *mut PageTable, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) {
+    fn map_p2(&self, p2_ptr: *mut PageTable, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) {
         let mut p2_table_entry = unsafe { (*p2_ptr).table[virtual_addr.p2_index()] };
         
         if !p2_table_entry.present() {
@@ -146,7 +150,7 @@ impl PageTableManager {
         }
     }
 
-    fn create_and_map_p1(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &mut impl FrameAllocator) -> PhysicalAddress {
+    fn create_and_map_p1(&self, virtual_addr : VirtualAddress, physical_addr: PhysicalAddress, allocator: &impl FrameAllocator) -> PhysicalAddress {
         let output = allocator.request_page();
         let p1_ptr = unsafe { self.translate_address(output).get_mut_ptr::<PageTable>() };
         unsafe { (*p1_ptr).make_unused() }

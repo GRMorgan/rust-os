@@ -60,7 +60,7 @@ pub struct VirtualAddress(u64);
 
 impl VirtualAddress {
     #[inline]
-    pub fn new(mut addr: u64) -> VirtualAddress {
+    pub const fn new(mut addr: u64) -> VirtualAddress {
         addr &= VIRTUAL_ADDRESS_MASK;
 
         if addr & VIRTUAL_ADDRESS_HIGH_BIT != 0 {

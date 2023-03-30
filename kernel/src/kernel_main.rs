@@ -30,7 +30,7 @@ pub extern "C" fn kernel_main(bootinfo: *mut bootinfo::BootInfo) {
 
 
     let page_table_manager = PageTableManager::new_from_cr3(unsafe { (*bootinfo).page_table_memory_offset});
-    for index in 0..255usize {
+    for index in 0..256usize {
         page_table_manager.unmap_p4_index(index, &FRAME_ALLOCATOR);
     }
     com1_println!("After identity map cleared!");
